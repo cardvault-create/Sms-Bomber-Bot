@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import subprocess, os
 
-BOT_TOKEN = "8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ"  # BotFather se token lo
+BOT_TOKEN = "8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ"
 
 try:
     from telegram import Update
@@ -14,13 +14,14 @@ except ImportError:
 active_bombing = {}
 
 async def start(update: Update, context):
-    await update.message.reply_text("""
-🔥 **BOMBER BOT**
+    msg = """
+🔥 BOMBER BOT
 @BeStChEaT_OwNeR
 
 /bomb <10-digit-number>
 /stop
-""", parse_mode='Markdown')
+"""
+    await update.message.reply_text(msg)
 
 async def bomb(update: Update, context):
     user_id = update.effective_user.id
@@ -45,7 +46,7 @@ async def bomb(update: Update, context):
     )
     active_bombing[user_id] = process
     
-    await update.message.reply_text(f"💣 Bombing +91{target}\n🛑 /stop")
+    await update.message.reply_text(f"💣 Bombing +91{target}\n/stop")
 
 async def stop(update: Update, context):
     user_id = update.effective_user.id
