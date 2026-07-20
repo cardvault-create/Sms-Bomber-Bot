@@ -4,7 +4,7 @@ import threading
 import os
 import sys
 
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+BOT_TOKEN = "8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ"
 
 try:
     from telegram import Update
